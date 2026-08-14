@@ -71,18 +71,20 @@ $$\text{Habilidades (Skills)} \longrightarrow \text{Comportamientos (Behaviors)}
 
 ---
 
-## 6. Modelo Canónico de Versionado INUO (`aa.bb.cc`)
+## 6. Modelo Canónico de Versionado INUO
 
 INUO utiliza un esquema de versionado estructurado de 3 componentes:
 
-$$\mathbf{Versión} = \mathbf{aa.bb.cc}$$
+$$\mathbf{Versión} = \mathbf{Desplegado.RevisiónDeEspecificación.Implementación}$$
 
-* **`aa` (Porcentaje de Funcionalidad Desplegada)**: Representa el porcentaje ($00$ a $99$, $100$) de funcionalidad lista y desplegada en producción (ej. `01` para distribución CLI local).
-* **`bb` (Porcentaje de Implementación del Código)**: Representa el porcentaje ($00$ a $99$, $100$) de funciones del código implementadas y verificadas con pruebas unitarias.
-* **`cc` (Índice de Revisión de Especificación / Spec Bumping)**: Índice incremental de ciclo de vida de la especificación ($00$, $01$, $02$, $03$, ...).
+* **Porcentaje Desplegado**: Porcentaje ($00$ a $99$, $100$) de funcionalidad lista y desplegada en producción (`00` mientras no haya despliegue en nube/Firebase).
+* **Revisión de Especificación**: Índice incremental del ciclo de vida de la especificación ($00$, $01$, $02$, $03$, ...).
+* **Porcentaje de Implementación**: Porcentaje ($00$ a $99$, $100$) de funciones especificadas que han sido implementadas y verificadas con pruebas unitarias.
 
-* **`SPEC_VERSION`**: `"01.95.02"`
+* **`SPEC_VERSION`**: `"00.02.95"`
 * **Estado de Sincronización**: Verificado e Imputable.
+
+
 
 
 

@@ -3,53 +3,55 @@ import path from 'path';
 import { getProjectPaths, loadState } from './context';
 import { InuoVersionSpec } from '../interfaces/InuoVersionSpec';
 
-export function formatInuoVersionString(aa: number, bb: number, cc: number): string {
+export function formatInuoVersionString(
+  deployedPercentage: number,
+  specRevisionIndex: number,
+  implementationPercentage: number
+): string {
   const pad = (n: number) => String(Math.max(0, Math.min(99, Math.floor(n)))).padStart(2, '0');
-  return `${pad(aa)}.${pad(bb)}.${pad(cc)}`;
+  return `${pad(deployedPercentage)}.${pad(specRevisionIndex)}.${pad(implementationPercentage)}`;
 }
 
 export function parseInuoVersionString(versionStr: string): InuoVersionSpec {
   const parts = versionStr.split('.');
-  const aa = parseInt(parts[0] || '0', 10);
-  const bb = parseInt(parts[1] || '0', 10);
-  const cc = parseInt(parts[2] || '0', 10);
+  const deployedPercentage = parseInt(parts[0] || '0', 10);
+  const specRevisionIndex = parseInt(parts[1] || '0', 10);
+  const implementationPercentage = parseInt(parts[2] || '0', 10);
 
   return {
-    deployedPercentage: aa,
-    implementationPercentage: bb,
-    specRevisionIndex: cc,
-    fullVersionString: formatInuoVersionString(aa, bb, cc),
+    deployedPercentage,
+    specRevisionIndex,
+    implementationPercentage,
+    fullVersionString: formatInuoVersionString(deployedPercentage, specRevisionIndex, implementationPercentage),
     calculatedAt: new Date().toISOString(),
   };
 }
 
 export function calculateInuoVersion(rootDir: string = process.cwd()): InuoVersionSpec {
   const paths = getProjectPaths(rootDir);
-  const state = loadState(paths.statePath);
 
-  // aa: Deployed percentage (0% - nothing deployed to Firebase/cloud yet)
-  const aa = 0;
+  // Deployed percentage (0% - nothing deployed to Firebase/cloud yet)
+  const deployedPercentage = 0;
 
+  // Spec revision index (2 from SPEC_VERSION "0.2.0")
+  const specRevisionIndex = 2;
 
-  // bb: Codebase implementation percentage (95% verified across test suite)
-  const bb = 95;
+  // Codebase implementation percentage (95% verified across test suite)
+  const implementationPercentage = 95;
 
-  // cc: Spec revision index (2 from SPEC_VERSION "0.2.0" / "01.95.02")
-  const cc = 2;
-
-  const fullVersionString = formatInuoVersionString(aa, bb, cc);
+  const fullVersionString = formatInuoVersionString(deployedPercentage, specRevisionIndex, implementationPercentage);
 
   return {
-    deployedPercentage: aa,
-    implementationPercentage: bb,
-    specRevisionIndex: cc,
+    deployedPercentage,
+    specRevisionIndex,
+    implementationPercentage,
     fullVersionString,
     calculatedAt: new Date().toISOString(),
   };
 }
 
 /**
- * Recalculates INUO aa.bb.cc version and automatically synchronizes
+ * Recalculates INUO (Deployed.SpecRevision.Implementation) version and automatically synchronizes
  * package.json, inuo-manifest.json, and INUO_SPEC.md from a single source of truth.
  */
 export function recalculateAndSyncVersion(rootDir: string = process.cwd()): InuoVersionSpec {
