@@ -15,6 +15,8 @@ export function setOperatingMode(
       currentMode: mode,
       detectedLanguage: 'en',
       autoDetectLanguage: true,
+      isSuccinctMode: true,
+      debugLevel: 1,
       authRequiredOnStart: mode === 'letMeServeYou',
       updatedAt: new Date().toISOString(),
     };
@@ -44,6 +46,8 @@ export function setInteractionLanguage(
       currentMode: 'promptMe',
       detectedLanguage: lang,
       autoDetectLanguage: autoDetect,
+      isSuccinctMode: true,
+      debugLevel: 1,
       authRequiredOnStart: false,
       updatedAt: new Date().toISOString(),
     };
@@ -73,6 +77,7 @@ export function setSuccinctMode(
       detectedLanguage: 'en',
       autoDetectLanguage: true,
       isSuccinctMode: enabled,
+      debugLevel: 1,
       authRequiredOnStart: false,
       updatedAt: new Date().toISOString(),
     };
@@ -88,6 +93,38 @@ export function setSuccinctMode(
   return state.operatingMode;
 }
 
+export function setDebugLevel(
+  level: number,
+  rootDir: string = process.cwd()
+): OperatingModeConfig {
+  const paths = getProjectPaths(rootDir);
+  const state = loadState(paths.statePath);
+
+  const safeLevel = Math.max(0, Math.min(3, level));
+
+  if (!state.operatingMode) {
+    state.operatingMode = {
+      currentMode: 'promptMe',
+      detectedLanguage: 'en',
+      autoDetectLanguage: true,
+      isSuccinctMode: true,
+      debugLevel: safeLevel,
+      authRequiredOnStart: false,
+      updatedAt: new Date().toISOString(),
+    };
+  } else {
+    state.operatingMode.debugLevel = safeLevel;
+    state.operatingMode.updatedAt = new Date().toISOString();
+  }
+
+  saveState(paths.statePath, state);
+  const levelNames = ['OFF (0)', 'INFO (1) [Default]', 'DEBUG (2)', 'TRACE (3)'];
+  console.log(
+    `\x1b[32m✔ [Debug Level Set]\x1b[0m System debug verbosity set to Level ${safeLevel} - ${levelNames[safeLevel] || safeLevel}.`
+  );
+  return state.operatingMode;
+}
+
 export function initiateHostGreeting(rootDir: string = process.cwd()): {
   greeting: string;
   promptMessage: string;
@@ -99,6 +136,8 @@ export function initiateHostGreeting(rootDir: string = process.cwd()): {
     currentMode: 'promptMe',
     detectedLanguage: 'en',
     autoDetectLanguage: true,
+    isSuccinctMode: true,
+    debugLevel: 1,
     authRequiredOnStart: false,
     updatedAt: new Date().toISOString(),
   };

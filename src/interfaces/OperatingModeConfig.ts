@@ -16,6 +16,9 @@ export interface OperatingModeConfig {
   /** True if succinct mode is active (concise, direct response, no tables, use bullet lists) */
   isSuccinctMode?: boolean;
 
+  /** System debug level (0 = OFF, 1 = INFO [default], 2 = DEBUG, 3 = TRACE) */
+  debugLevel?: number;
+
   /** Customized host concierge greeting text */
   hostGreetingText?: string;
 

@@ -1,7 +1,6 @@
 {
   "name": "inuo-cli",
   "version": "00.02.95",
-
   "description": "Interactive shell CLI for the INUO Platform matching protocol and specification lifecycle",
   "main": "dist/models/index.js",
   "bin": {
@@ -9,6 +8,9 @@
   },
   "scripts": {
     "build": "tsc",
+    "dev": "node scripts/devWatcher.js",
+    "web": "npm run build && node bin/inuo.js web",
+    "serve": "node scripts/devWatcher.js",
     "pretest": "npm run build",
     "cli": "npm run build && node bin/inuo.js",
     "init": "npm run build && node bin/inuo.js init",
@@ -25,9 +27,13 @@
   "author": "INUO Development Team",
   "license": "MIT",
   "dependencies": {
-    "@google/genai": "^0.1.1"
+    "@google/genai": "*",
+    "blessed": "^0.1.81",
+    "express": "^4.19.2"
   },
   "devDependencies": {
+    "@types/blessed": "^0.1.27",
+    "@types/express": "^4.17.21",
     "@types/node": "^22.13.4",
     "typescript": "^5.7.3"
   }

@@ -1,6 +1,8 @@
 import { GoogleGenAI } from '@google/genai';
 import { loadEnvironment, saveGeminiApiKey } from './environment';
 import { getProjectPaths, loadState } from './context';
+import { writeOutput } from './outputRouter';
+import { OutputChannelEnum } from '../enums/OutputChannelEnum';
 
 export interface ParsedIntentResult {
   type: 'NEED' | 'OFFER' | 'DETAIL_PLAN' | 'ANSWER' | 'CORRECTION' | 'QUERY' | 'EXIT' | 'COMMAND_SEQUENCE';
@@ -11,7 +13,9 @@ export interface ParsedIntentResult {
   correctionTopic?: string;
   correctionText?: string;
   modelType?: 'Transactional' | 'GiftBased';
-  explanation?: string;
+  explanation?: string; // Direct reply to user (stdout / Descriptor 1)
+  thinkingDetails?: string; // Model reasoning and step breakdown (stderr / Descriptor 2)
+  debugDetails?: string; // System debug details (stderr / Descriptor 2)
   commandSequence?: string[];
   subNeeds?: { verb: string; object: string }[];
   doubts?: string[];
@@ -43,7 +47,8 @@ export async function processNaturalLanguageIntent(
   const state = loadState(paths.statePath);
   const modeConfig = state.operatingMode;
   const lang = modeConfig?.detectedLanguage || 'en';
-  const isSuccinct = !!modeConfig?.isSuccinctMode;
+  const isSuccinct = modeConfig?.isSuccinctMode !== false;
+  const debugLevel = env.debugLevel;
 
   try {
     const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
@@ -52,17 +57,27 @@ The user input is: "${userInput}"
 Target Interaction Language: "${lang}"
 Succinct Mode: ${isSuccinct ? 'ACTIVE' : 'DISABLED'}
 
+CRITICAL OUTPUT SEPARATION MANDATE:
+- "explanation": Direct user reply ONLY in Target Interaction Language ("${lang}"). Concise and direct.
+- "thinkingDetails": Step-by-step reasoning and goal decomposition thoughts (in "${lang}").
+- "debugDetails": Internal prompt classification metrics and metadata.
+
 CRITICAL LANGUAGE MANDATE:
-- You MUST generate ALL explanations, answers, doubts, and generated text strictly in Target Interaction Language ("${lang}").
-- If Target Interaction Language is "es", respond ENTIRELY IN SPANISH (ej. "Explicación breve", "Duda aclaratoria").
-- If Target Interaction Language is "fr", respond ENTIRELY IN FRENCH.
-- If Target Interaction Language is "de", respond ENTIRELY IN GERMAN.
-- If Target Interaction Language is "pt", respond ENTIRELY IN PORTUGUESE.
+- You MUST generate "explanation" and "thinkingDetails" strictly in Target Interaction Language ("${lang}").
 
 CRITICAL SUCCINCT MODE MANDATE:
 ${isSuccinct ? `- Succinct Mode is ACTIVE: Be extremely concise, direct, and short.
 - NEVER generate markdown tables (| ... |).
 - Use ONLY simple bullet lists (- item) for any multi-item descriptions.` : `- Provide clear, helpful explanations.`}
+
+SYSTEM OVERVIEW INQUIRIES ("What does INUO do?" / "¿Qué hace INUO?" / "Was macht INUO?" / "Que fait INUO?" / "O que faz o INUO?"):
+If the user asks what INUO does, its purpose, or general capabilities:
+- Set "type": "QUERY"
+- Set "explanation" to a 4-bullet point presentation in Target Interaction Language ("${lang}") covering:
+  - Intent Structuring Engine (NEED = VERB + OBJECT <-> OFFER = COMPLEMENT + OBJECT)
+  - Direct Peer Matching (Request <-> Donate, Buy <-> Sell, Seek <-> Offer)
+  - Recursive Goal Decomposition (Breaking down multi-step goals into executable sub-needs)
+  - Decentralized Governance & Trust (Millisecond circuit breakers, multi-party threshold consensus)
 
 Formula Baseline: NEED = (VERB) + (OBJECT) or OFFER = (COMP_VERB) + (OBJECT)
 
@@ -83,8 +98,11 @@ Supported CLI Commands:
 - "question ask --title <Title> --options <Opt1,Opt2>"
 - "mode promptMe / letMeServeYou"
 - "mode succinct [on|off]"
+- "mode debug <0|1|2|3>"
 - "auth signin / signout"
+- "gc" (Open Google Chrome Web UI)
 - "exit / quit / q"
+
 
 Intent Types:
 - "NEED": Single simple need (e.g. "I need a food packet")
@@ -106,7 +124,9 @@ Return ONLY a raw JSON object with NO markdown formatting matching this structur
   "correctionTopic": "Topic area if correcting",
   "correctionText": "Learned directive rule text if correcting",
   "modelType": "Transactional" | "GiftBased",
-  "explanation": "Short explanation in Target Interaction Language",
+  "explanation": "Short direct user reply in Target Interaction Language",
+  "thinkingDetails": "Model step breakdown & reasoning thoughts",
+  "debugDetails": "Introspection metadata",
   "commandSequence": [
     "need create --verb Request --object Food"
   ],
@@ -125,9 +145,21 @@ Return ONLY a raw JSON object with NO markdown formatting matching this structur
 
     const text = response.text?.trim() || '';
     const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanJson) as ParsedIntentResult;
+    const result = JSON.parse(cleanJson) as ParsedIntentResult;
+
+    // Route Thinking Details to stderr (Descriptor 2)
+    if (result.thinkingDetails) {
+      writeOutput(OutputChannelEnum.THINKING, result.thinkingDetails, debugLevel);
+    }
+
+    // Route Debug Details to stderr (Descriptor 2)
+    if (result.debugDetails) {
+      writeOutput(OutputChannelEnum.DEBUG, result.debugDetails, debugLevel);
+    }
+
+    return result;
   } catch (err: any) {
-    console.log('\x1b[31m%s\x1b[0m', `[Gemini AI Error] ${err.message}`);
+    writeOutput(OutputChannelEnum.DEBUG, `[Gemini AI Error] ${err.message}`, debugLevel);
     return null;
   }
 }

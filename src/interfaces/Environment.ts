@@ -25,4 +25,7 @@ export interface Environment {
   
   /** Default Gemini model identifier */
   defaultModel: string;
+
+  /** Debug logging level (0 = OFF, 1 = INFO [default], 2 = DEBUG, 3 = TRACE) */
+  debugLevel: number;
 }

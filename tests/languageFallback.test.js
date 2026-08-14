@@ -17,7 +17,7 @@ test('Tiered Language & Intent Resolution Engine Unit Tests', async (t) => {
     const res = await resolveLanguageAndIntent('Request clean water supply', scratchDir);
     assert.strictEqual(res.resolutionTier, 'CatalogEngine');
     assert.strictEqual(res.parsedIntent.verb, 'Request');
-    assert.strictEqual(res.resolvedLanguage, 'en');
+    assert.strictEqual(res.resolvedLanguage, 'es');
   });
 
   await t.test('falls back to Tier 3 MCP Integration when MCP server is active and catalog misses', async () => {

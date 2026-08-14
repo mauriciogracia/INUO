@@ -1,4 +1,5 @@
 import { OperatingMode } from '../types/OperatingMode';
+import { getI18n } from '../i18n';
 
 export function detectLanguage(text: string): string {
   const lower = text.toLowerCase();
@@ -6,16 +7,25 @@ export function detectLanguage(text: string): string {
   // Spanish detection cues
   if (
     lower.includes('hola') ||
-    lower.includes('buenos dias') ||
-    lower.includes('buenas noches') ||
+    lower.includes('buenos') ||
+    lower.includes('buenas') ||
     lower.includes('necesito') ||
-    lower.includes('como estas') ||
-    lower.includes('quien eres') ||
+    lower.includes('como') ||
+    lower.includes('cómo') ||
+    lower.includes('quien') ||
+    lower.includes('quién') ||
     lower.includes('gracias') ||
-    lower.includes('por favor') ||
+    lower.includes('favor') ||
     lower.includes('que me') ||
     lower.includes('qué me') ||
+    lower.includes('que hace') ||
+    lower.includes('qué hace') ||
+    lower.includes('que puedes') ||
+    lower.includes('qué puedes') ||
+    lower.includes('que es') ||
+    lower.includes('qué es') ||
     lower.includes('permitas') ||
+    lower.includes('permites') ||
     lower.includes('permitir') ||
     lower.includes('hacer') ||
     lower.includes('puedo') ||
@@ -31,6 +41,20 @@ export function detectLanguage(text: string): string {
     return 'es';
   }
 
+  // English detection cues
+  if (
+    lower.includes('hello') ||
+    lower.includes('good morning') ||
+    lower.includes('who are you') ||
+    lower.includes('what can you do') ||
+    lower.includes('what is inuo') ||
+    lower.includes('thank you') ||
+    lower.includes('please') ||
+    lower.includes('how are you')
+  ) {
+    return 'en';
+  }
+
   // French detection cues
   if (
     lower.includes('bonjour') ||
@@ -38,7 +62,12 @@ export function detectLanguage(text: string): string {
     lower.includes('merci') ||
     lower.includes('s\'il vous plait') ||
     lower.includes('qui es-tu') ||
-    lower.includes('que puis-je')
+    lower.includes('qui es tu') ||
+    lower.includes('que puis-je') ||
+    lower.includes('que peux-tu') ||
+    lower.includes('que peux tu') ||
+    lower.includes('que fait inuo') ||
+    lower.includes('qu\'est-ce que inuo')
   ) {
     return 'fr';
   }
@@ -49,7 +78,9 @@ export function detectLanguage(text: string): string {
     lower.includes('guten tag') ||
     lower.includes('danke') ||
     lower.includes('wer bist du') ||
-    lower.includes('was kann')
+    lower.includes('was kannst du') ||
+    lower.includes('was macht inuo') ||
+    lower.includes('was ist inuo')
   ) {
     return 'de';
   }
@@ -60,77 +91,38 @@ export function detectLanguage(text: string): string {
     lower.includes('bom dia') ||
     lower.includes('obrigado') ||
     lower.includes('quem é você') ||
-    lower.includes('o que posso')
+    lower.includes('quem e voce') ||
+    lower.includes('o que você') ||
+    lower.includes('o que voce') ||
+    lower.includes('o que posso') ||
+    lower.includes('o que faz o inuo') ||
+    lower.includes('o que é o inuo')
   ) {
     return 'pt';
   }
 
-  return 'en';
+  return 'es';
 }
 
 export function getLocalizedHostGreeting(
   mode: OperatingMode,
-  lang: string = 'en',
+  lang: string = 'es',
   userName?: string
 ): { greetingText: string; promptWhoAreYouText: string } {
+  const dict = getI18n(lang);
+
   if (mode === 'promptMe') {
-    switch (lang) {
-      case 'es':
-        return {
-          greetingText: 'INUO (Modo Directo / promptMe) activo. Ingrese su comando o consulta.',
-          promptWhoAreYouText: 'Identidad activa:',
-        };
-      case 'fr':
-        return {
-          greetingText: 'INUO (Mode Direct / promptMe) actif. Entrez votre commande.',
-          promptWhoAreYouText: 'Identité active:',
-        };
-      case 'de':
-        return {
-          greetingText: 'INUO (Direkter Modus / promptMe) aktiv. Geben Sie Ihren Befehl ein.',
-          promptWhoAreYouText: 'Aktive Identität:',
-        };
-      case 'pt':
-        return {
-          greetingText: 'INUO (Modo Direto / promptMe) ativo. Insira seu comando.',
-          promptWhoAreYouText: 'Identidade ativa:',
-        };
-      default:
-        return {
-          greetingText: 'INUO (Direct Mode / promptMe) active. Enter your command or goal.',
-          promptWhoAreYouText: 'Active Identity:',
-        };
-    }
+    return {
+      greetingText: dict.hostGreeting.promptMe.greetingText,
+      promptWhoAreYouText: dict.hostGreeting.promptMe.promptWhoAreYouText,
+    };
   }
 
-  // mode === 'letMeServeYou' (Proactive Host)
   const nameStr = userName && userName !== 'Default User' ? ` ${userName}` : '';
+  const greetingText = dict.hostGreeting.letMeServeYou.greetingText.replace('{name}', nameStr);
 
-  switch (lang) {
-    case 'es':
-      return {
-        greetingText: `¡Buenos días${nameStr}! Bienvenido a INUO. Es un honor atenderle hoy.`,
-        promptWhoAreYouText: '¿Me permite saber quién nos acompaña hoy para brindarle una atención personalizada?',
-      };
-    case 'fr':
-      return {
-        greetingText: `Bonjour${nameStr}! Bienvenue sur INUO. C'est un honneur de vous servir aujourd'hui.`,
-        promptWhoAreYouText: 'Puis-je savoir qui nous rejoint aujourd\'hui pour vous offrir une assistance personnalisée?',
-      };
-    case 'de':
-      return {
-        greetingText: `Guten Tag${nameStr}! Willkommen bei INUO. Es ist mir eine Ehre, Ihnen heute zu dienen.`,
-        promptWhoAreYouText: 'Darf ich erfahren, wer heute bei uns ist, um Ihnen persönlichen Service zu bieten?',
-      };
-    case 'pt':
-      return {
-        greetingText: `Bom dia${nameStr}! Bem-vindo ao INUO. É uma honra servi-lo hoje.`,
-        promptWhoAreYouText: 'Posso saber quem está conosco hoje para oferecer um atendimento personalizado?',
-      };
-    default:
-      return {
-        greetingText: `Good day${nameStr}! Welcome to INUO. It is an honor to serve you today.`,
-        promptWhoAreYouText: 'May I ask who is speaking today so I may tailor my service to you?',
-      };
-  }
+  return {
+    greetingText,
+    promptWhoAreYouText: dict.hostGreeting.letMeServeYou.promptWhoAreYouText,
+  };
 }

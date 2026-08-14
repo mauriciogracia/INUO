@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INUO Platform — Web UI</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header Bar -->
+    <header class="top-header">
+      <div class="brand">
+        <div class="logo-badge">INUO</div>
+        <div class="title-group">
+          <h1>INUO Interaction Engine</h1>
+          <span class="version-tag" id="system-version">v00.02.95</span>
+        </div>
+      </div>
+
+      <div class="status-pills">
+        <div class="pill mode-pill">
+          <span class="pill-label">Mode:</span>
+          <span class="pill-value" id="status-mode">promptMe</span>
+        </div>
+
+        <div class="pill lang-pill">
+          <span class="pill-label">Lang:</span>
+          <select id="lang-select" class="lang-dropdown">
+            <option value="es" selected>ES (Español)</option>
+            <option value="en">EN (English)</option>
+            <option value="de">DE (Deutsch)</option>
+            <option value="fr">FR (Français)</option>
+            <option value="pt">PT (Português)</option>
+          </select>
+
+        </div>
+
+        <div class="pill succinct-pill">
+          <span class="pill-label">Succinct:</span>
+          <span class="pill-value badge-on" id="status-succinct">ON</span>
+        </div>
+
+        <div class="pill debug-pill">
+          <span class="pill-label">Debug:</span>
+          <span class="pill-value" id="status-debug">Level 1</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Live Log Stream Window -->
+    <main class="log-viewport" id="log-viewport">
+      <div class="log-entry system-msg">
+        <span class="log-time">[System]</span>
+        <span class="log-text">🚀 INUO Web UI connected. Real-time SSE stream active.</span>
+      </div>
+    </main>
+
+    <!-- Pinned Bottom Input Bar -->
+    <footer class="bottom-input-bar">
+      <form id="command-form" class="input-form">
+        <div class="prompt-prefix">inuo &gt;</div>
+        <input 
+          type="text" 
+          id="command-input" 
+          class="cmd-input" 
+          placeholder="Type a command or ask INUO a question in any language (e.g. '¿Qué hace INUO?')..."
+          autocomplete="off" 
+          autofocus
+        >
+        <button type="submit" class="send-btn" id="send-btn">
+          <span>Send</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </form>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

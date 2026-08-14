@@ -201,12 +201,15 @@ export function loadState(statePath: string): StateData {
 
   const defaultMode: OperatingModeConfig = {
     currentMode: 'promptMe',
-    detectedLanguage: 'en',
+    detectedLanguage: 'es',
     autoDetectLanguage: true,
     isSuccinctMode: true,
+    debugLevel: 3,
     authRequiredOnStart: false,
     updatedAt: new Date().toISOString(),
   };
+
+
 
 
   if (!fs.existsSync(statePath)) {

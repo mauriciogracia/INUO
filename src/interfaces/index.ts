@@ -49,6 +49,8 @@ export * from './SocialBroadcastPayload';
 export * from './InteractiveQuestionSpec';
 export * from './InuoVersionSpec';
 export * from './MasterMindSyncProgress';
+export * from './I18nDictionary';
+
 
 
 

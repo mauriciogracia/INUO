@@ -1,6 +1,9 @@
 import { getProjectPaths, loadState } from './context';
 import { getTrustRecord } from './trustEngine';
 import { SelfAwarenessReport } from '../interfaces/SelfAwarenessReport';
+import { processNaturalLanguageIntent } from './aiClient';
+import { writeOutput } from './outputRouter';
+import { OutputChannelEnum } from '../enums/OutputChannelEnum';
 
 export function generateSelfAwarenessResponse(
   callerEntityId: string = 'user_local',
@@ -12,7 +15,7 @@ export function generateSelfAwarenessResponse(
   const state = loadState(paths.statePath);
   const trust = getTrustRecord(callerEntityId, callerEntityType, rootDir);
 
-  const specVersion = '0.1.0';
+  const specVersion = '00.02.95';
 
   // 1. Untrusted / Blacklisted Gate
   if (trust.isBlacklisted || trust.trustScore < 30) {
@@ -33,7 +36,7 @@ export function generateSelfAwarenessResponse(
     const principlesList = (state.principles || []).map((p) => `"${p.name}": ${p.statement}`);
     const deviceNames = (state.clientDevices || []).map((d) => `${d.deviceName} (${d.deviceType})`);
 
-    const text = `I am INUO (v${specVersion}) — an intent-matching platform built on the canonical formula NEED = (VERB) + (OBJECT).
+    const text = `I am INUO (v00.02.95) — an intent-matching platform built on the canonical formula NEED = (VERB) + (OBJECT).
 I am running as Master Mind [${state.masterMindId || 'primary'}].
 [Governance]: Full Master Trainer access granted.
 [Principles]: ${principlesList.join(' | ')}
@@ -64,7 +67,7 @@ I am running as Master Mind [${state.masterMindId || 'primary'}].
 
   // 3. MediumTrust Disclosure
   if (trust.trustScore >= 50) {
-    const text = `I am INUO (v${specVersion}) — an intent-matching platform that connects Needs and Offers via canonical formulas NEED = (VERB) + (OBJECT).
+    const text = `I am INUO (v00.02.95) — an intent-matching platform that connects Needs and Offers via canonical formulas NEED = (VERB) + (OBJECT).
 I support multi-device interactions across Android, iOS, Smart TV, Smart Watch, and Desktop CLI.`;
 
     return {
@@ -94,4 +97,33 @@ I support multi-device interactions across Android, iOS, Smart TV, Smart Watch, 
     generatedResponseText: `I am INUO — an intent matching assistant.`,
     timestamp: new Date().toISOString(),
   };
+}
+
+/**
+ * Enhanced Self-Awareness Response Generator with LLM / External AI Fallback.
+ * 1. Checks local Self-Awareness Engine disclosures (Trust score & governance role).
+ * 2. If prompt requires multi-lingual synthesis or dynamic explanation, delegates to Gemini LLM.
+ */
+export async function generateSelfAwarenessResponseWithLLMFallback(
+  callerEntityId: string = 'user_local',
+  callerEntityType: 'User' | 'PeerNode' | 'MCPServer' | 'ExternalAI' = 'User',
+  queryText: string = 'Who are you?',
+  rootDir: string = process.cwd()
+): Promise<SelfAwarenessReport> {
+  const report = generateSelfAwarenessResponse(callerEntityId, callerEntityType, queryText, rootDir);
+
+  // Security gate: Untrusted callers cannot use LLM fallback to leak system internals
+  if (report.callerTrustScore < 30) return report;
+
+  writeOutput(OutputChannelEnum.DEBUG, '[Self-Awareness Engine] Invoking Gemini LLM for multi-lingual synthesis...', 2);
+  try {
+    const aiResult = await processNaturalLanguageIntent(queryText, rootDir);
+    if (aiResult?.explanation) {
+      report.generatedResponseText = `${report.generatedResponseText}\n\n${aiResult.explanation}`;
+    }
+  } catch {
+    // Graceful fallback to static report if LLM unavailable
+  }
+
+  return report;
 }
