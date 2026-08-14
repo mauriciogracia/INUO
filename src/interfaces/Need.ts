@@ -39,4 +39,17 @@ export interface Need {
   
   /** Timestamp when the need was last updated */
   updatedAt: string;
+
+  /** Hierarchical visual code (e.g. '1', '1.1', '1.1.2') */
+  hierarchicalId?: string;
+
+  /** Detailed specification text for this need */
+  details?: string;
+
+  /** Pending doubt / question strings posted by INUO */
+  doubts?: string[];
+
+  /** Answered knowledge notes provided by the user as Knowledge Provider */
+  knowledgeNotes?: string[];
 }
+

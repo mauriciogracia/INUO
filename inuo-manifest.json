@@ -1,7 +1,8 @@
 {
-  "SPEC_VERSION": "0.1.0",
-  "cliVersion": "0.1.0",
-  "lastSyncedAt": "2026-08-14T01:35:00-05:00",
+  "SPEC_VERSION": "0.2.0",
+  "cliVersion": "0.2.0",
+  "lastSyncedAt": "2026-08-14T06:44:00-05:00",
+
   "moduleMappings": [
     {
       "pairKey": "Request+Food packet",

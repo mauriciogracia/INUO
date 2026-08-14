@@ -2,11 +2,17 @@ import { GoogleGenAI } from '@google/genai';
 import { loadEnvironment, saveGeminiApiKey } from './environment';
 
 export interface ParsedIntentResult {
-  type: 'NEED' | 'OFFER' | 'QUERY';
+  type: 'NEED' | 'OFFER' | 'DETAIL_PLAN' | 'ANSWER' | 'CORRECTION' | 'QUERY';
   verb?: string;
   object?: string;
+  targetIdOrCode?: string;
+  answerText?: string;
+  correctionTopic?: string;
+  correctionText?: string;
   modelType?: 'Transactional' | 'GiftBased';
   explanation?: string;
+  subNeeds?: { verb: string; object: string }[];
+  doubts?: string[];
 }
 
 export function getStoredApiKey(rootDir: string = process.cwd()): string {
@@ -33,22 +39,40 @@ export async function processNaturalLanguageIntent(
 
   try {
     const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
-    const prompt = `You are the INUO Interaction Engine intent parser.
+    const prompt = `You are the INUO Interaction Engine & Recursive Detailing intent parser.
 The user prompt is: "${userInput}"
 
 Analyze the user intent based on the INUO Global Specification:
 Formula: NEED = (VERB) + (OBJECT) or OFFER = (COMP_VERB) + (OBJECT)
 
-Valid Need Verbs: Request, Buy, Seek, Need, Borrow, Consult, Search, Call, Volunteer, Report, Ride, Talk, Transport, Deliver, Employ, Contract, Recruit.
-Valid Offer Complements: Donate, Sell, Offer, Fulfill, Lend, Advise, Supply, Respond, Coordinate, Action, Drive, Listen, Carry, Fetch, Teach, Nurse, Apply.
+Valid Need Verbs: Request, Buy, Seek, Need, Borrow, Consult, Search, Call, Volunteer, Report, Ride, Talk, Transport, Deliver, Employ, Contract, Recruit, Construct, Design, Plan, Build, Upgrade, Evolve.
+Valid Offer Complements: Donate, Sell, Offer, Fulfill, Lend, Advise, Supply, Respond, Coordinate, Action, Drive, Listen, Carry, Fetch, Teach, Nurse, Apply, Execute.
+
+Intent Types:
+- "NEED": Single simple need (e.g. "I need a food packet")
+- "OFFER": Single simple offer (e.g. "I offer 10 food packets")
+- "DETAIL_PLAN": Complex goal or request asking to detail/plan steps (e.g., "We in city A need a new road from A to city B help me plan this")
+- "ANSWER": Providing details or answering a doubt for a specific step/code (e.g., "for step 1.1 width is 4 lanes")
+- "CORRECTION": User is correcting a misunderstanding or giving a rule directive (e.g., "no that is wrong, for food needs always check local inventory first")
+- "QUERY": General question about INUO or status
 
 Return ONLY a raw JSON object with NO markdown formatting matching this structure:
 {
-  "type": "NEED" | "OFFER" | "QUERY",
-  "verb": "VerbName",
-  "object": "ObjectDescription",
+  "type": "NEED" | "OFFER" | "DETAIL_PLAN" | "ANSWER" | "CORRECTION" | "QUERY",
+  "verb": "PrimaryVerb",
+  "object": "PrimaryObject",
+  "targetIdOrCode": "Optional target step code or ID if answering or detailing existing step",
+  "answerText": "Answer details if answering a step",
+  "correctionTopic": "Topic area if correcting (e.g. Food Needs)",
+  "correctionText": "Learned directive rule text if correcting",
   "modelType": "Transactional" | "GiftBased",
-  "explanation": "Short explanation"
+  "explanation": "Short explanation",
+  "subNeeds": [
+    { "verb": "SubVerb", "object": "SubObject" }
+  ],
+  "doubts": [
+    "Optional doubt or clarifying question INUO asks user"
+  ]
 }`;
 
     const response = await ai.models.generateContent({

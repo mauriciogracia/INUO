@@ -6,7 +6,6 @@ import { runNeedCommand } from './needCommand';
 import { runTest } from './testCommand';
 import { loadManifest } from './context';
 
-
 function bumpSemver(versionStr: string): string {
   const parts = versionStr.split('.').map(Number);
   if (parts.length === 3 && !parts.some(isNaN)) {
@@ -27,6 +26,12 @@ export async function runEvolveCommand(goalInput: string, rootDir: string = proc
     console.log('Connect your key by typing: \x1b[1mkey <YOUR_GEMINI_API_KEY>\x1b[0m\n');
     return;
   }
+
+  const manifestPath = path.join(rootDir, 'inuo-manifest.json');
+  const specPath = path.join(rootDir, 'INUO_SPEC.md');
+
+  const manifestBackup = fs.existsSync(manifestPath) ? fs.readFileSync(manifestPath, 'utf8') : null;
+  const specBackup = fs.existsSync(specPath) ? fs.readFileSync(specPath, 'utf8') : null;
 
   try {
     const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
@@ -77,10 +82,13 @@ Return ONLY a raw JSON object with NO markdown formatting matching this structur
       }
     }
 
+    const createdFiles: string[] = [];
+
     if (Array.isArray(plan.newInterfaces)) {
       for (const item of plan.newInterfaces) {
         const filePath = path.join(rootDir, 'src', 'interfaces', item.filename);
         fs.writeFileSync(filePath, item.content, 'utf8');
+        createdFiles.push(filePath);
 
         const indexPath = path.join(rootDir, 'src', 'interfaces', 'index.ts');
         const exportName = item.filename.replace('.ts', '');
@@ -96,6 +104,7 @@ Return ONLY a raw JSON object with NO markdown formatting matching this structur
       for (const item of plan.newTypes) {
         const filePath = path.join(rootDir, 'src', 'types', item.filename);
         fs.writeFileSync(filePath, item.content, 'utf8');
+        createdFiles.push(filePath);
 
         const indexPath = path.join(rootDir, 'src', 'types', 'index.ts');
         const exportName = item.filename.replace('.ts', '');
@@ -108,10 +117,19 @@ Return ONLY a raw JSON object with NO markdown formatting matching this structur
     }
 
     console.log('\n\x1b[36m%s\x1b[0m', '[Verification] Verifying generated evolution code...');
-    runTest(undefined, rootDir);
+    try {
+      runTest(undefined, rootDir);
+    } catch (testErr: any) {
+      console.log('\x1b[31m%s\x1b[0m', `[Verification Failed] ${testErr.message}. Initiating Automated Rollback...`);
+      if (manifestBackup) fs.writeFileSync(manifestPath, manifestBackup, 'utf8');
+      if (specBackup) fs.writeFileSync(specPath, specBackup, 'utf8');
+      for (const f of createdFiles) {
+        if (fs.existsSync(f)) fs.unlinkSync(f);
+      }
+      console.log('\x1b[33m%s\x1b[0m', '✔ Automated Rollback Complete! Restored state to previous working version.');
+      return;
+    }
 
-    const manifestPath = path.join(rootDir, 'inuo-manifest.json');
-    const specPath = path.join(rootDir, 'INUO_SPEC.md');
     const manifest = loadManifest(manifestPath);
 
     if (manifest) {
