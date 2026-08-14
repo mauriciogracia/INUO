@@ -71,9 +71,18 @@ $$\text{Habilidades (Skills)} \longrightarrow \text{Comportamientos (Behaviors)}
 
 ---
 
-## 6. Control de Versión de la Especificación
+## 6. Modelo Canónico de Versionado INUO (`aa.bb.cc`)
 
-* **`SPEC_VERSION`**: `"0.2.0"`
+INUO utiliza un esquema de versionado estructurado de 3 componentes:
+
+$$\mathbf{Versión} = \mathbf{aa.bb.cc}$$
+
+* **`aa` (Porcentaje de Funcionalidad Desplegada)**: Representa el porcentaje ($00$ a $99$, $100$) de funcionalidad lista y desplegada en producción (ej. `01` para distribución CLI local).
+* **`bb` (Porcentaje de Implementación del Código)**: Representa el porcentaje ($00$ a $99$, $100$) de funciones del código implementadas y verificadas con pruebas unitarias.
+* **`cc` (Índice de Revisión de Especificación / Spec Bumping)**: Índice incremental de ciclo de vida de la especificación ($00$, $01$, $02$, $03$, ...).
+
+* **`SPEC_VERSION`**: `"01.95.02"`
 * **Estado de Sincronización**: Verificado e Imputable.
+
 
 

@@ -40,6 +40,22 @@ export * from './SelfAwarenessReport';
 export * from './MasterMindSnapshot';
 export * from './TrustedMemberConfig';
 export * from './EngineConfig';
+export * from './AuthSessionResult';
+export * from './BiometricVaultEntry';
+export * from './TrustThresholdGate';
+export * from './OperatingModeConfig';
+export * from './LanguageResolutionResult';
+export * from './SocialBroadcastPayload';
+export * from './InteractiveQuestionSpec';
+export * from './InuoVersionSpec';
+
+
+
+
+
+
+
+
 
 
 

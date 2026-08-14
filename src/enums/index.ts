@@ -18,6 +18,12 @@ export * from './TrustLevelEnum';
 export * from './DeviceTypeEnum';
 export * from './EmergencyStatusEnum';
 export * from './RelationshipTypeEnum';
+export * from './AuthMethodEnum';
+export * from './OperatingModeEnum';
+export * from './QuestionOptionTypeEnum';
+
+
+
 
 
 

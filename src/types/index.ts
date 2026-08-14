@@ -19,6 +19,12 @@ export * from './TrustLevel';
 export * from './DeviceType';
 export * from './EmergencyStatus';
 export * from './RelationshipType';
+export * from './AuthMethod';
+export * from './OperatingMode';
+export * from './QuestionOptionType';
+
+
+
 
 
 

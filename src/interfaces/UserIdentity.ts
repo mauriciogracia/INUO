@@ -1,5 +1,6 @@
 import { UserRole } from '../types/UserRole';
 import { TrustLevel } from '../types/TrustLevel';
+import { AuthMethod } from '../types/AuthMethod';
 
 /**
  * Represents an active user session/identity interacting with INUO.
@@ -23,8 +24,12 @@ export interface UserIdentity {
   /** True if user is a pre-registered family member authorized during emergency incapacitation */
   isFamilyMember?: boolean;
 
+  /** Authentication method used to sign in */
+  lastAuthMethod?: AuthMethod;
+
   /** ISO Timestamp of last login/identity update */
   authenticatedAt: string;
 }
+
 
 

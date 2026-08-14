@@ -26,11 +26,20 @@ import { triggerEmergencyIncapacitation, authorizeEmergencyCommand } from './eme
 import { runMasterMindCommand } from './masterMindCommand';
 import { runMemberCommand } from './memberCommand';
 import { runEngineCommand } from './engineCommand';
+import { runAuthCommand } from './authCommand';
+import { runThresholdCommand } from './thresholdCommand';
+import { runModeCommand } from './modeCommand';
+import { detectLanguage } from './languageEngine';
+import { initiateHostGreeting, setInteractionLanguage } from './hostServiceEngine';
+import { runSocialCommand } from './socialCommand';
+import { runQuestionCommand } from './questionCommand';
+import { calculateInuoVersion } from './versionEngine';
+import { runVersionCommand } from './versionCommand';
 
 export function startInteractiveShell(rootDir: string = process.cwd()): void {
   const syncRes = checkAndApplySyncProtocol(rootDir);
-  const ctx = createContext(rootDir);
-  const version = ctx.manifest?.SPEC_VERSION || '0.1.0';
+  const inuoVer = calculateInuoVersion(rootDir);
+  const version = inuoVer.fullVersionString;
   const hasKey = !!getStoredApiKey(rootDir);
 
   console.log('\x1b[36m%s\x1b[0m', '┌──────────────────────────────────────────────────────────┐');
@@ -43,7 +52,24 @@ export function startInteractiveShell(rootDir: string = process.cwd()): void {
   console.log('\x1b[36m%s\x1b[0m', '│  Type "help" for available commands or "exit" to quit.   │');
   console.log('\x1b[36m%s\x1b[0m', '└──────────────────────────────────────────────────────────┘');
 
+  // Check operating mode greeting
+  const host = initiateHostGreeting(rootDir);
+  console.log(`\n\x1b[36m[Host Greeting]:\x1b[0m ${host.greeting}`);
+  if (host.authRequired) {
+    console.log(`\x1b[33m[Host Prompt]:\x1b[0m ${host.promptMessage}`);
+  }
+
   const commands = [
+    'version',
+    'question',
+    'social',
+    'mode',
+    'promptme',
+    'letmeserveyou',
+    'auth',
+    'signin',
+    'signout',
+    'threshold',
     'whoami',
     'user',
     'member',
@@ -104,10 +130,63 @@ export function startInteractiveShell(rootDir: string = process.cwd()): void {
       return;
     }
 
+    // Auto Language Detection
+    const paths = getProjectPaths(rootDir);
+    const stateData = loadState(paths.statePath);
+    if (stateData.operatingMode?.autoDetectLanguage) {
+      const detectedLang = detectLanguage(trimmed);
+      setInteractionLanguage(detectedLang, true, rootDir);
+    }
+
     const parts = trimmed.split(/\s+/);
     const cmd = parts[0].toLowerCase();
 
     switch (cmd) {
+      case 'version':
+      case '-v':
+      case '--version':
+        runVersionCommand(parts.slice(1), rootDir);
+        break;
+
+      case 'question':
+        runQuestionCommand(parts.slice(1), rootDir);
+        break;
+
+      case 'social':
+        runSocialCommand(parts.slice(1), rootDir);
+        break;
+
+      case 'mode':
+        runModeCommand(parts.slice(1), rootDir);
+        break;
+
+      case 'promptme':
+        runModeCommand(['promptMe'], rootDir);
+        break;
+
+      case 'letmeserveyou':
+      case 'serve':
+        runModeCommand(['letMeServeYou'], rootDir);
+        break;
+
+      case 'auth':
+        runAuthCommand(parts.slice(1), rootDir);
+        break;
+
+      case 'signin':
+      case 'login':
+        runAuthCommand(['signin', ...parts.slice(1)], rootDir);
+        break;
+
+      case 'signout':
+      case 'logout':
+        runAuthCommand(['signout'], rootDir);
+        break;
+
+      case 'threshold':
+        runThresholdCommand(parts.slice(1), rootDir);
+        break;
+
       case 'whoami':
         runWhoamiCommand(rootDir);
         break;
@@ -269,8 +348,6 @@ export function startInteractiveShell(rootDir: string = process.cwd()): void {
 
       default:
         // 0. Emergency State Instruction Gate
-        const paths = getProjectPaths(rootDir);
-        const stateData = loadState(paths.statePath);
         const activeUser = stateData?.activeUser;
         const emergencyAuth = authorizeEmergencyCommand(
           activeUser?.userId || 'user_local',
@@ -363,6 +440,51 @@ export function dispatchSingleCommand(args: string[], rootDir: string = process.
   const cmd = args[0]?.toLowerCase();
 
   switch (cmd) {
+    case 'version':
+    case '-v':
+    case '--version':
+      runVersionCommand(args.slice(1), rootDir);
+      break;
+
+    case 'question':
+      runQuestionCommand(args.slice(1), rootDir);
+      break;
+
+    case 'social':
+      runSocialCommand(args.slice(1), rootDir);
+      break;
+
+    case 'mode':
+      runModeCommand(args.slice(1), rootDir);
+      break;
+
+    case 'promptme':
+      runModeCommand(['promptMe'], rootDir);
+      break;
+
+    case 'letmeserveyou':
+    case 'serve':
+      runModeCommand(['letMeServeYou'], rootDir);
+      break;
+
+    case 'auth':
+      runAuthCommand(args.slice(1), rootDir);
+      break;
+
+    case 'signin':
+    case 'login':
+      runAuthCommand(['signin', ...args.slice(1)], rootDir);
+      break;
+
+    case 'signout':
+    case 'logout':
+      runAuthCommand(['signout'], rootDir);
+      break;
+
+    case 'threshold':
+      runThresholdCommand(args.slice(1), rootDir);
+      break;
+
     case 'whoami':
       runWhoamiCommand(rootDir);
       break;
@@ -514,6 +636,12 @@ export function dispatchSingleCommand(args: string[], rootDir: string = process.
 
 function printHelp(): void {
   console.log('\x1b[36m%s\x1b[0m', '=== INUO Interactive Shell Command Reference ===');
+  console.log('  \x1b[1mversion\x1b[0m                                Display structured aa.bb.cc version breakdown');
+  console.log('  \x1b[1mquestion list / ask / answer\x1b[0m        Interactive Divide & Conquer single/multi-choice questions');
+  console.log('  \x1b[1msocial list / broadcast\x1b[0m               Multi-platform social media API broadcast engine');
+  console.log('  \x1b[1mmode status / promptMe / letMeServeYou / language <L>\x1b[0m Dual operating modes & concierge host');
+  console.log('  \x1b[1mauth status / signin / signout\x1b[0m        Multi-modal sign-in (Passphrase, Voice, Video, PIN, Token)');
+  console.log('  \x1b[1mthreshold list / create / unlock\x1b[0m      Multi-party threshold trust consensus protected assets');
   console.log('  \x1b[1mwhoami\x1b[0m                                 Display active user session identity & trust score');
   console.log('  \x1b[1muser set <name> [--role R]\x1b[0m              Set active user name and role');
   console.log('  \x1b[1mmember list / add / bind\x1b[0m               Trusted members network (Family, Friends, Emergency Contacts)');

@@ -1,6 +1,7 @@
 {
   "name": "inuo-cli",
-  "version": "0.2.0",
+  "version": "01.95.02",
+
 
   "description": "Interactive shell CLI for the INUO Platform matching protocol and specification lifecycle",
   "main": "dist/models/index.js",

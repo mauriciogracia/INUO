@@ -45,6 +45,10 @@ import { ClientDeviceConfig } from '../interfaces/ClientDeviceConfig';
 import { EmergencyContext } from '../interfaces/EmergencyContext';
 import { TrustedMemberConfig } from '../interfaces/TrustedMemberConfig';
 import { EngineConfig } from '../interfaces/EngineConfig';
+import { BiometricVaultEntry } from '../interfaces/BiometricVaultEntry';
+import { TrustThresholdGate } from '../interfaces/TrustThresholdGate';
+import { OperatingModeConfig } from '../interfaces/OperatingModeConfig';
+import { InteractiveQuestionSpec } from '../interfaces/InteractiveQuestionSpec';
 
 export interface StateData {
   needs: Need[];
@@ -67,7 +71,15 @@ export interface StateData {
   emergencyContext?: EmergencyContext;
   trustedMembers?: TrustedMemberConfig[];
   engines?: EngineConfig[];
+  localAuthVault?: BiometricVaultEntry[];
+  thresholdGates?: TrustThresholdGate[];
+  operatingMode?: OperatingModeConfig;
+  interactiveQuestions?: InteractiveQuestionSpec[];
 }
+
+
+
+
 
 export const BASELINE_ENGINES: EngineConfig[] = [
   {
@@ -97,7 +109,17 @@ export const BASELINE_ENGINES: EngineConfig[] = [
     isImmutable: true,
     updatedAt: '2026-08-14T00:00:00.000Z',
   },
+  {
+    engineId: 'engine_social_broadcast',
+    engineName: 'Multi-Platform Social Broadcast Engine',
+    description: 'Collection of API integration behaviors orchestrating simultaneous posts across X/Twitter, LinkedIn, Facebook, and Telegram.',
+    behaviorIds: ['behavior_post_twitter', 'behavior_post_linkedin', 'behavior_post_facebook', 'behavior_post_telegram'],
+    createdBy: 'MasterTrainer',
+    isImmutable: true,
+    updatedAt: '2026-08-14T00:00:00.000Z',
+  },
 ];
+
 
 
 
@@ -174,6 +196,14 @@ export function loadState(statePath: string): StateData {
     authenticatedAt: new Date().toISOString(),
   };
 
+  const defaultMode: OperatingModeConfig = {
+    currentMode: 'promptMe',
+    detectedLanguage: 'en',
+    autoDetectLanguage: true,
+    authRequiredOnStart: false,
+    updatedAt: new Date().toISOString(),
+  };
+
   if (!fs.existsSync(statePath)) {
     return {
       needs: [],
@@ -196,6 +226,10 @@ export function loadState(statePath: string): StateData {
       emergencyContext: { status: 'Normal', authorizedFamilyUserIds: [], activatedAt: new Date().toISOString() },
       trustedMembers: [],
       engines: [...BASELINE_ENGINES],
+      localAuthVault: [],
+      thresholdGates: [],
+      operatingMode: defaultMode,
+      interactiveQuestions: [],
     };
   }
   try {
@@ -222,6 +256,10 @@ export function loadState(statePath: string): StateData {
       emergencyContext: parsed.emergencyContext || { status: 'Normal', authorizedFamilyUserIds: [], activatedAt: new Date().toISOString() },
       trustedMembers: parsed.trustedMembers || [],
       engines: parsed.engines && parsed.engines.length > 0 ? parsed.engines : [...BASELINE_ENGINES],
+      localAuthVault: parsed.localAuthVault || [],
+      thresholdGates: parsed.thresholdGates || [],
+      operatingMode: parsed.operatingMode || defaultMode,
+      interactiveQuestions: parsed.interactiveQuestions || [],
     };
   } catch {
     return {
@@ -245,9 +283,17 @@ export function loadState(statePath: string): StateData {
       emergencyContext: { status: 'Normal', authorizedFamilyUserIds: [], activatedAt: new Date().toISOString() },
       trustedMembers: [],
       engines: [...BASELINE_ENGINES],
+      localAuthVault: [],
+      thresholdGates: [],
+      operatingMode: defaultMode,
+      interactiveQuestions: [],
     };
   }
 }
+
+
+
+
 
 
 
