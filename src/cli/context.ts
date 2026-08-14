@@ -203,9 +203,11 @@ export function loadState(statePath: string): StateData {
     currentMode: 'promptMe',
     detectedLanguage: 'en',
     autoDetectLanguage: true,
+    isSuccinctMode: true,
     authRequiredOnStart: false,
     updatedAt: new Date().toISOString(),
   };
+
 
   if (!fs.existsSync(statePath)) {
     return {

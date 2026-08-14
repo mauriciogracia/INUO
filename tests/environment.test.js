@@ -9,9 +9,9 @@ test('Environment Configuration Unit Tests', async (t) => {
 
   await t.test('loads default environment configuration', () => {
     const env = loadEnvironment(tmpDir);
-    assert.equal(env.specVersion, '0.1.0');
-    assert.equal(env.cliVersion, '0.1.0');
-    assert.equal(env.defaultModel, 'gemini-2.5-flash');
+    assert.equal(env.specVersion, '00.02.95');
+    assert.equal(env.cliVersion, '00.02.95');
+    assert.equal(env.defaultModel, 'gemini-3.6-flash');
   });
 
   await t.test('saves and detects Gemini API Key', () => {

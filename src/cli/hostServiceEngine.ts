@@ -60,6 +60,34 @@ export function setInteractionLanguage(
   return state.operatingMode;
 }
 
+export function setSuccinctMode(
+  enabled: boolean,
+  rootDir: string = process.cwd()
+): OperatingModeConfig {
+  const paths = getProjectPaths(rootDir);
+  const state = loadState(paths.statePath);
+
+  if (!state.operatingMode) {
+    state.operatingMode = {
+      currentMode: 'promptMe',
+      detectedLanguage: 'en',
+      autoDetectLanguage: true,
+      isSuccinctMode: enabled,
+      authRequiredOnStart: false,
+      updatedAt: new Date().toISOString(),
+    };
+  } else {
+    state.operatingMode.isSuccinctMode = enabled;
+    state.operatingMode.updatedAt = new Date().toISOString();
+  }
+
+  saveState(paths.statePath, state);
+  console.log(
+    `\x1b[32m✔ [Succinct Mode]\x1b[0m ${enabled ? 'ENABLED (Concise responses, bullet lists only, no tables)' : 'DISABLED (Standard verbose responses)'}.`
+  );
+  return state.operatingMode;
+}
+
 export function initiateHostGreeting(rootDir: string = process.cwd()): {
   greeting: string;
   promptMessage: string;

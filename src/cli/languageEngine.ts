@@ -12,7 +12,21 @@ export function detectLanguage(text: string): string {
     lower.includes('como estas') ||
     lower.includes('quien eres') ||
     lower.includes('gracias') ||
-    lower.includes('por favor')
+    lower.includes('por favor') ||
+    lower.includes('que me') ||
+    lower.includes('qué me') ||
+    lower.includes('permitas') ||
+    lower.includes('permitir') ||
+    lower.includes('hacer') ||
+    lower.includes('puedo') ||
+    lower.includes('puedes') ||
+    lower.includes('mostrar') ||
+    lower.includes('listar') ||
+    lower.includes('ayuda') ||
+    lower.includes('quiero') ||
+    lower.includes('tengo') ||
+    lower.includes('para') ||
+    lower.includes('por')
   ) {
     return 'es';
   }
@@ -23,7 +37,8 @@ export function detectLanguage(text: string): string {
     lower.includes('salut') ||
     lower.includes('merci') ||
     lower.includes('s\'il vous plait') ||
-    lower.includes('qui es-tu')
+    lower.includes('qui es-tu') ||
+    lower.includes('que puis-je')
   ) {
     return 'fr';
   }
@@ -33,7 +48,8 @@ export function detectLanguage(text: string): string {
     lower.includes('hallo') ||
     lower.includes('guten tag') ||
     lower.includes('danke') ||
-    lower.includes('wer bist du')
+    lower.includes('wer bist du') ||
+    lower.includes('was kann')
   ) {
     return 'de';
   }
@@ -43,7 +59,8 @@ export function detectLanguage(text: string): string {
     lower.includes('olá') ||
     lower.includes('bom dia') ||
     lower.includes('obrigado') ||
-    lower.includes('quem é você')
+    lower.includes('quem é você') ||
+    lower.includes('o que posso')
   ) {
     return 'pt';
   }

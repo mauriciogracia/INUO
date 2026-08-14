@@ -1,8 +1,9 @@
 import { GoogleGenAI } from '@google/genai';
 import { loadEnvironment, saveGeminiApiKey } from './environment';
+import { getProjectPaths, loadState } from './context';
 
 export interface ParsedIntentResult {
-  type: 'NEED' | 'OFFER' | 'DETAIL_PLAN' | 'ANSWER' | 'CORRECTION' | 'QUERY';
+  type: 'NEED' | 'OFFER' | 'DETAIL_PLAN' | 'ANSWER' | 'CORRECTION' | 'QUERY' | 'EXIT' | 'COMMAND_SEQUENCE';
   verb?: string;
   object?: string;
   targetIdOrCode?: string;
@@ -11,6 +12,7 @@ export interface ParsedIntentResult {
   correctionText?: string;
   modelType?: 'Transactional' | 'GiftBased';
   explanation?: string;
+  commandSequence?: string[];
   subNeeds?: { verb: string; object: string }[];
   doubts?: string[];
 }
@@ -37,41 +39,82 @@ export async function processNaturalLanguageIntent(
     return null;
   }
 
+  const paths = getProjectPaths(rootDir);
+  const state = loadState(paths.statePath);
+  const modeConfig = state.operatingMode;
+  const lang = modeConfig?.detectedLanguage || 'en';
+  const isSuccinct = !!modeConfig?.isSuccinctMode;
+
   try {
     const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
-    const prompt = `You are the INUO Interaction Engine & Recursive Detailing intent parser.
-The user prompt is: "${userInput}"
+    const prompt = `You are the INUO Interaction Engine & Command Translation AI.
+The user input is: "${userInput}"
+Target Interaction Language: "${lang}"
+Succinct Mode: ${isSuccinct ? 'ACTIVE' : 'DISABLED'}
 
-Analyze the user intent based on the INUO Global Specification:
-Formula: NEED = (VERB) + (OBJECT) or OFFER = (COMP_VERB) + (OBJECT)
+CRITICAL LANGUAGE MANDATE:
+- You MUST generate ALL explanations, answers, doubts, and generated text strictly in Target Interaction Language ("${lang}").
+- If Target Interaction Language is "es", respond ENTIRELY IN SPANISH (ej. "Explicación breve", "Duda aclaratoria").
+- If Target Interaction Language is "fr", respond ENTIRELY IN FRENCH.
+- If Target Interaction Language is "de", respond ENTIRELY IN GERMAN.
+- If Target Interaction Language is "pt", respond ENTIRELY IN PORTUGUESE.
+
+CRITICAL SUCCINCT MODE MANDATE:
+${isSuccinct ? `- Succinct Mode is ACTIVE: Be extremely concise, direct, and short.
+- NEVER generate markdown tables (| ... |).
+- Use ONLY simple bullet lists (- item) for any multi-item descriptions.` : `- Provide clear, helpful explanations.`}
+
+Formula Baseline: NEED = (VERB) + (OBJECT) or OFFER = (COMP_VERB) + (OBJECT)
 
 Valid Need Verbs: Request, Buy, Seek, Need, Borrow, Consult, Search, Call, Volunteer, Report, Ride, Talk, Transport, Deliver, Employ, Contract, Recruit, Construct, Design, Plan, Build, Upgrade, Evolve.
 Valid Offer Complements: Donate, Sell, Offer, Fulfill, Lend, Advise, Supply, Respond, Coordinate, Action, Drive, Listen, Carry, Fetch, Teach, Nurse, Apply, Execute.
 
+Supported CLI Commands:
+- "need create --verb <Verb> --object <Object>"
+- "offer create --verb <ComplementVerb> --object <Object>"
+- "match"
+- "detail <id> decompose <description>"
+- "answer <id> <text>"
+- "whoami"
+- "status"
+- "catalog"
+- "version"
+- "social broadcast --message <msg>"
+- "question ask --title <Title> --options <Opt1,Opt2>"
+- "mode promptMe / letMeServeYou"
+- "mode succinct [on|off]"
+- "auth signin / signout"
+- "exit / quit / q"
+
 Intent Types:
 - "NEED": Single simple need (e.g. "I need a food packet")
 - "OFFER": Single simple offer (e.g. "I offer 10 food packets")
-- "DETAIL_PLAN": Complex goal or request asking to detail/plan steps (e.g., "We in city A need a new road from A to city B help me plan this")
-- "ANSWER": Providing details or answering a doubt for a specific step/code (e.g., "for step 1.1 width is 4 lanes")
-- "CORRECTION": User is correcting a misunderstanding or giving a rule directive (e.g., "no that is wrong, for food needs always check local inventory first")
+- "DETAIL_PLAN": Complex goal or request asking to detail/plan steps
+- "ANSWER": Providing details or answering a doubt for a specific step/code
+- "CORRECTION": User is correcting a misunderstanding or giving a rule directive
 - "QUERY": General question about INUO or status
+- "EXIT": User wants to exit, say goodbye, or terminate session in any language
+- "COMMAND_SEQUENCE": For ANY complex, multi-step, or unsupported input, convert the user prompt into a sequence of real supported CLI commands in "commandSequence" array.
 
 Return ONLY a raw JSON object with NO markdown formatting matching this structure:
 {
-  "type": "NEED" | "OFFER" | "DETAIL_PLAN" | "ANSWER" | "CORRECTION" | "QUERY",
+  "type": "NEED" | "OFFER" | "DETAIL_PLAN" | "ANSWER" | "CORRECTION" | "QUERY" | "EXIT" | "COMMAND_SEQUENCE",
   "verb": "PrimaryVerb",
   "object": "PrimaryObject",
   "targetIdOrCode": "Optional target step code or ID if answering or detailing existing step",
   "answerText": "Answer details if answering a step",
-  "correctionTopic": "Topic area if correcting (e.g. Food Needs)",
+  "correctionTopic": "Topic area if correcting",
   "correctionText": "Learned directive rule text if correcting",
   "modelType": "Transactional" | "GiftBased",
-  "explanation": "Short explanation",
+  "explanation": "Short explanation in Target Interaction Language",
+  "commandSequence": [
+    "need create --verb Request --object Food"
+  ],
   "subNeeds": [
     { "verb": "SubVerb", "object": "SubObject" }
   ],
   "doubts": [
-    "Optional doubt or clarifying question INUO asks user"
+    "Optional doubt in Target Interaction Language"
   ]
 }`;
 

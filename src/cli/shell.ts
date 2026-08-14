@@ -66,7 +66,9 @@ export function startInteractiveShell(rootDir: string = process.cwd()): void {
     'mode',
     'promptme',
     'letmeserveyou',
+    'succinct',
     'auth',
+
     'signin',
     'signout',
     'threshold',
@@ -104,7 +106,18 @@ export function startInteractiveShell(rootDir: string = process.cwd()): void {
     'help',
     'exit',
     'quit',
+    'q',
+    'bye',
+    'goodbye',
+    'chao',
+    'chau',
+    'adios',
+    'ciao',
+    'sayonara',
+    'aufwiedersehen',
   ];
+
+
 
   function completer(line: string) {
     const completions = commands;
@@ -168,6 +181,12 @@ export function startInteractiveShell(rootDir: string = process.cwd()): void {
       case 'serve':
         runModeCommand(['letMeServeYou'], rootDir);
         break;
+
+      case 'succinct':
+      case 'succinctmode':
+        runModeCommand(['succinct', ...parts.slice(1)], rootDir);
+        break;
+
 
       case 'auth':
         runAuthCommand(parts.slice(1), rootDir);
@@ -342,9 +361,21 @@ export function startInteractiveShell(rootDir: string = process.cwd()): void {
 
       case 'exit':
       case 'quit':
-        console.log('Exiting INUO shell. Goodbye!');
+      case 'q':
+      case 'bye':
+      case 'goodbye':
+      case 'chao':
+      case 'chau':
+      case 'adios':
+      case 'adiós':
+      case 'ciao':
+      case 'sayonara':
+      case 'aufwiedersehen':
+        console.log('\x1b[36m%s\x1b[0m', 'Exiting INUO shell. ¡Hasta luego! / Goodbye! / Chao!');
         rl.close();
         process.exit(0);
+
+
 
       default:
         // 0. Emergency State Instruction Gate
@@ -403,7 +434,15 @@ export function startInteractiveShell(rootDir: string = process.cwd()): void {
         console.log('\x1b[36m%s\x1b[0m', '[Gemini AI Intent Parser] Analyzing natural language intent...');
         const result = await processNaturalLanguageIntent(trimmed, rootDir);
         if (result) {
-          if (result.type === 'NEED' && result.verb && result.object) {
+          if (result.type === 'COMMAND_SEQUENCE' || (result.commandSequence && result.commandSequence.length > 0)) {
+            const seq = result.commandSequence || [];
+            console.log(`\x1b[36m[LLM Command Translator]:\x1b[0m Converted prompt into ${seq.length} supported CLI command(s):`);
+            if (result.explanation) console.log(`  \x1b[90m${result.explanation}\x1b[0m`);
+            for (const cmdLine of seq) {
+              console.log(`  \x1b[32m⚡ Executing:\x1b[0m ${cmdLine}`);
+              dispatchSingleCommand(cmdLine.split(/\s+/), rootDir);
+            }
+          } else if (result.type === 'NEED' && result.verb && result.object) {
             console.log(`\x1b[32m✔ AI Parsed Need Intent:\x1b[0m ${result.explanation || ''}`);
             runNeedCommand(['create', '--verb', result.verb, '--object', result.object], rootDir);
           } else if (result.type === 'OFFER' && result.verb && result.object) {
@@ -419,11 +458,16 @@ export function startInteractiveShell(rootDir: string = process.cwd()): void {
           } else if (result.type === 'CORRECTION' && result.correctionText) {
             console.log(`\x1b[32m✔ AI Parsed User Correction:\x1b[0m ${result.explanation || ''}`);
             processUserCorrection(result.correctionTopic || 'General', result.correctionText, rootDir);
+          } else if (result.type === 'EXIT') {
+            console.log(`\x1b[36m[INUO Farewell]:\x1b[0m ${result.explanation || 'Exiting INUO shell. ¡Hasta luego! / Goodbye! / Chao!'}`);
+            rl.close();
+            process.exit(0);
           } else if (result.explanation) {
             console.log(`\x1b[36m[Gemini AI Response]:\x1b[0m ${result.explanation}`);
           }
         }
         break;
+
     }
 
     console.log();
@@ -677,5 +721,16 @@ function printHelp(): void {
   console.log('  \x1b[1mrollback <version>\x1b[0m                     Rollback SPEC_VERSION to a previous version');
   console.log('  \x1b[1m<Any Natural Language Phrase>\x1b[0m          AI automatically parses intent & creates/details Needs/Offers');
   console.log('  \x1b[1mhelp\x1b[0m                                   Display this command guide');
-  console.log('  \x1b[1mexit / quit\x1b[0m                            Exit the interactive shell');
+  console.log('  \x1b[1mexit / quit / q / bye / chao\x1b[0m            Exit the interactive shell');
 }
+
+export function isFarewellOrExitPhrase(input: string): boolean {
+  const normalized = input.trim().toLowerCase();
+  const exitPhrases = [
+    'exit', 'quit', 'q', 'bye', 'goodbye', 'see ya', 'farewell',
+    'chao', 'chau', 'adios', 'adiós', 'hasta luego', 'nos vemos',
+    'ciao', 'au revoir', 'auf wiedersehen', 'sayonara', 'tchau', 'hasta la vista'
+  ];
+  return exitPhrases.some((phrase) => normalized === phrase || normalized.startsWith(`${phrase} `) || normalized.endsWith(` ${phrase}`));
+}
+

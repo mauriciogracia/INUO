@@ -58,6 +58,8 @@ export function addCustomVerbPairing(verb: string, complement: string, rootDir: 
 
 export function runCatalog(args: string[] = [], rootDir: string = process.cwd()): void {
   const sub = args[0]?.toLowerCase();
+  const paths = getProjectPaths(rootDir);
+  const state = loadState(paths.statePath);
 
   if (sub === 'add') {
     let verb = '';
@@ -81,12 +83,22 @@ export function runCatalog(args: string[] = [], rootDir: string = process.cwd())
     return;
   }
 
-  console.log('\x1b[36m%s\x1b[0m', '=== INUO Global Catalog: Canonical & Dynamic Verbs ===\n');
-
-  const paths = getProjectPaths(rootDir);
-  const state = loadState(paths.statePath);
   const customList = state.customVerbs || [];
+  const isSuccinct = state.operatingMode ? state.operatingMode.isSuccinctMode !== false : true;
+  const isEs = state.operatingMode?.detectedLanguage === 'es';
 
+  if (isSuccinct) {
+    console.log(isEs ? '\x1b[36m=== Catálogo INUO de Verbos (Modo Sucinto) ===\x1b[0m\n' : '\x1b[36m=== INUO Global Catalog (Succinct Mode) ===\x1b[0m\n');
+    for (const item of BUILTIN_CATALOG) {
+      console.log(`- \x1b[1m${item.verb}\x1b[0m ➔ \x1b[32m${item.complement}\x1b[0m (${item.example})`);
+    }
+    for (const item of customList) {
+      console.log(`- \x1b[33m${item.verb}\x1b[0m ➔ \x1b[32m${item.complement}\x1b[0m (Custom)`);
+    }
+    return;
+  }
+
+  console.log('\x1b[36m%s\x1b[0m', '=== INUO Global Catalog: Canonical & Dynamic Verbs ===\n');
   console.log(`\x1b[1m${'NEED VERB'.padEnd(12)} | ${'COMPLEMENT'.padEnd(14)} | TYPE & EXAMPLE\x1b[0m`);
   console.log(''.padEnd(70, '-'));
 

@@ -13,6 +13,9 @@ export interface OperatingModeConfig {
   /** True if language is dynamically determined from user input */
   autoDetectLanguage: boolean;
 
+  /** True if succinct mode is active (concise, direct response, no tables, use bullet lists) */
+  isSuccinctMode?: boolean;
+
   /** Customized host concierge greeting text */
   hostGreetingText?: string;
 

@@ -10,14 +10,21 @@ export function loadEnvironment(rootDir: string = process.cwd()): Environment {
   const envFilePath = path.join(rootDir, '.env');
 
   let geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+  let defaultModel = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 
   // Load from .env if present and key not in env
-  if (!geminiApiKey && fs.existsSync(envFilePath)) {
+  if (fs.existsSync(envFilePath)) {
     try {
       const envContent = fs.readFileSync(envFilePath, 'utf8');
-      const match = envContent.match(/GEMINI_API_KEY\s*=\s*(.+)/) || envContent.match(/GOOGLE_API_KEY\s*=\s*(.+)/);
-      if (match && match[1]) {
-        geminiApiKey = match[1].trim().replace(/^["']|["']$/g, '');
+      if (!geminiApiKey) {
+        const match = envContent.match(/GEMINI_API_KEY\s*=\s*(.+)/) || envContent.match(/GOOGLE_API_KEY\s*=\s*(.+)/);
+        if (match && match[1]) {
+          geminiApiKey = match[1].trim().replace(/^["']|["']$/g, '');
+        }
+      }
+      const modelMatch = envContent.match(/GEMINI_MODEL\s*=\s*(.+)/);
+      if (modelMatch && modelMatch[1]) {
+        defaultModel = modelMatch[1].trim().replace(/^["']|["']$/g, '');
       }
     } catch {}
   }
@@ -30,7 +37,7 @@ export function loadEnvironment(rootDir: string = process.cwd()): Environment {
     } catch {}
   }
 
-  let specVersion = '0.1.0';
+  let specVersion = '00.02.95';
   if (fs.existsSync(manifestPath)) {
     try {
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
@@ -41,13 +48,13 @@ export function loadEnvironment(rootDir: string = process.cwd()): Environment {
   return {
     geminiApiKey,
     specVersion,
-    cliVersion: '0.1.0',
+    cliVersion: '00.02.95',
     rootDir,
     manifestPath,
     specPath,
     statePath,
     configPath,
-    defaultModel: 'gemini-2.5-flash',
+    defaultModel,
   };
 }
 
