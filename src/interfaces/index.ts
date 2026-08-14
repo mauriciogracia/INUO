@@ -48,6 +48,8 @@ export * from './LanguageResolutionResult';
 export * from './SocialBroadcastPayload';
 export * from './InteractiveQuestionSpec';
 export * from './InuoVersionSpec';
+export * from './MasterMindSyncProgress';
+
 
 
 

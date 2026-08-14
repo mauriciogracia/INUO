@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const { formatInuoVersionString, parseInuoVersionString, calculateInuoVersion } = require('../dist/cli/versionEngine');
+const { formatInuoVersionString, parseInuoVersionString, calculateInuoVersion, recalculateAndSyncVersion } = require('../dist/cli/versionEngine');
 
 test('INUO Versioning Model (aa.bb.cc) Unit Tests', async (t) => {
   const scratchDir = path.join(__dirname, 'scratch_version_test');
@@ -28,6 +28,28 @@ test('INUO Versioning Model (aa.bb.cc) Unit Tests', async (t) => {
     assert.strictEqual(sysVer.deployedPercentage, 1);
     assert.strictEqual(sysVer.implementationPercentage, 95);
     assert.strictEqual(sysVer.specRevisionIndex, 2);
+  });
+
+  await t.test('recalculates and synchronizes version across package.json, manifest, and spec from single source', () => {
+    const dummyPkg = path.join(scratchDir, 'package.json');
+    const dummyManifest = path.join(scratchDir, 'inuo-manifest.json');
+    const dummySpec = path.join(scratchDir, 'INUO_SPEC.md');
+
+    fs.writeFileSync(dummyPkg, JSON.stringify({ name: 'test', version: '0.0.0' }));
+    fs.writeFileSync(dummyManifest, JSON.stringify({ SPEC_VERSION: '0.0.0', cliVersion: '0.0.0' }));
+    fs.writeFileSync(dummySpec, '* **`SPEC_VERSION`**: "0.0.0"');
+
+    const res = recalculateAndSyncVersion(scratchDir);
+    assert.strictEqual(res.fullVersionString, '01.95.02');
+
+    const updatedPkg = JSON.parse(fs.readFileSync(dummyPkg, 'utf8'));
+    assert.strictEqual(updatedPkg.version, '01.95.02');
+
+    const updatedManifest = JSON.parse(fs.readFileSync(dummyManifest, 'utf8'));
+    assert.strictEqual(updatedManifest.SPEC_VERSION, '01.95.02');
+
+    const updatedSpec = fs.readFileSync(dummySpec, 'utf8');
+    assert.match(updatedSpec, /"01\.95\.02"/);
   });
 
   // Cleanup

@@ -49,6 +49,7 @@ import { BiometricVaultEntry } from '../interfaces/BiometricVaultEntry';
 import { TrustThresholdGate } from '../interfaces/TrustThresholdGate';
 import { OperatingModeConfig } from '../interfaces/OperatingModeConfig';
 import { InteractiveQuestionSpec } from '../interfaces/InteractiveQuestionSpec';
+import { MasterMindSyncProgress } from '../interfaces/MasterMindSyncProgress';
 
 export interface StateData {
   needs: Need[];
@@ -75,7 +76,9 @@ export interface StateData {
   thresholdGates?: TrustThresholdGate[];
   operatingMode?: OperatingModeConfig;
   interactiveQuestions?: InteractiveQuestionSpec[];
+  progressiveSyncs?: MasterMindSyncProgress[];
 }
+
 
 
 
@@ -230,6 +233,7 @@ export function loadState(statePath: string): StateData {
       thresholdGates: [],
       operatingMode: defaultMode,
       interactiveQuestions: [],
+      progressiveSyncs: [],
     };
   }
   try {
@@ -260,6 +264,7 @@ export function loadState(statePath: string): StateData {
       thresholdGates: parsed.thresholdGates || [],
       operatingMode: parsed.operatingMode || defaultMode,
       interactiveQuestions: parsed.interactiveQuestions || [],
+      progressiveSyncs: parsed.progressiveSyncs || [],
     };
   } catch {
     return {
@@ -287,9 +292,11 @@ export function loadState(statePath: string): StateData {
       thresholdGates: [],
       operatingMode: defaultMode,
       interactiveQuestions: [],
+      progressiveSyncs: [],
     };
   }
 }
+
 
 
 

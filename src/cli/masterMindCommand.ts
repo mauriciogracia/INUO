@@ -3,6 +3,7 @@ import {
   pushMasterMindSnapshot,
   rollbackMasterMindState,
 } from './masterMindHistoryEngine';
+import { initiateProgressiveMasterMindSync, authorizeProgressiveSync } from './progressiveSyncEngine';
 
 export function runMasterMindCommand(args: string[], rootDir: string = process.cwd()): void {
   const sub = args[0]?.toLowerCase() || 'history';
@@ -49,5 +50,36 @@ export function runMasterMindCommand(args: string[], rootDir: string = process.c
     return;
   }
 
-  console.log('Unknown subcommand for mastermind. Supported: "mastermind history", "mastermind snapshot <summary>", "mastermind rollback [1|2]"');
+  if (sub === 'sync' || sub === 'download') {
+    let sizeMb = 500;
+    let speedMbps = 2;
+
+    for (let i = 1; i < args.length; i++) {
+      if (args[i] === '--size' && args[i + 1]) sizeMb = parseFloat(args[i + 1]);
+      if (args[i] === '--speed' && args[i + 1]) speedMbps = parseFloat(args[i + 1]);
+    }
+
+    const payloadSizeBytes = Math.round(sizeMb * 1024 * 1024);
+    initiateProgressiveMasterMindSync(payloadSizeBytes, speedMbps, rootDir);
+    return;
+  }
+
+  if (sub === 'authorize' || sub === 'allow') {
+    const syncId = args[1];
+    const allow = !args.includes('--deny');
+
+    if (!syncId) {
+      console.log('\x1b[33m%s\x1b[0m', 'Usage: mastermind authorize <SyncId> [--allow|--deny]');
+      return;
+    }
+
+    try {
+      authorizeProgressiveSync(syncId, allow, rootDir);
+    } catch (err: any) {
+      console.log('\x1b[31m%s\x1b[0m', `❌ Authorization Error: ${err.message}`);
+    }
+    return;
+  }
+
+  console.log('Unknown subcommand for mastermind. Supported: "mastermind history", "mastermind snapshot <summary>", "mastermind rollback [1|2]", "mastermind sync [--size MB] [--speed Mbps]", "mastermind authorize <SyncId>"');
 }

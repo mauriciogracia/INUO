@@ -12,19 +12,19 @@ test('Manifest Sync & Operational Lifecycle Unit Tests', async (t) => {
   const manifestPath = path.join(tmpDir, 'inuo-manifest.json');
   const specPath = path.join(tmpDir, 'INUO_SPEC.md');
 
-  await t.test('bootstraps INUO_SPEC.md and inuo-manifest.json v0.1.0', () => {
+  await t.test('bootstraps INUO_SPEC.md and inuo-manifest.json v01.95.02', () => {
     runBootstrap(tmpDir);
 
     assert.equal(fs.existsSync(specPath), true);
     assert.equal(fs.existsSync(manifestPath), true);
 
     const manifest = loadManifest(manifestPath);
-    assert.equal(manifest.SPEC_VERSION, '0.1.0');
-    assert.equal(manifest.cliVersion, '0.1.0');
+    assert.equal(manifest.SPEC_VERSION, '01.95.02');
+    assert.equal(manifest.cliVersion, '01.95.02');
   });
 
   await t.test('verifies SPEC_VERSION matching', () => {
-    runTest('0.1.0', tmpDir);
+    runTest('01.95.02', tmpDir);
   });
 
   await t.test('executes rollback sequence to previous version snapshot', () => {

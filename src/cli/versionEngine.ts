@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { getProjectPaths, loadState } from './context';
 import { InuoVersionSpec } from '../interfaces/InuoVersionSpec';
 
@@ -28,10 +30,10 @@ export function calculateInuoVersion(rootDir: string = process.cwd()): InuoVersi
   // aa: Deployed percentage (1% for local CLI operational distribution)
   const aa = 1;
 
-  // bb: Codebase implementation percentage (95% verified across 108 unit tests)
+  // bb: Codebase implementation percentage (95% verified across test suite)
   const bb = 95;
 
-  // cc: Spec revision index (2 from SPEC_VERSION "0.2.0")
+  // cc: Spec revision index (2 from SPEC_VERSION "0.2.0" / "01.95.02")
   const cc = 2;
 
   const fullVersionString = formatInuoVersionString(aa, bb, cc);
@@ -43,4 +45,61 @@ export function calculateInuoVersion(rootDir: string = process.cwd()): InuoVersi
     fullVersionString,
     calculatedAt: new Date().toISOString(),
   };
+}
+
+/**
+ * Recalculates INUO aa.bb.cc version and automatically synchronizes
+ * package.json, inuo-manifest.json, and INUO_SPEC.md from a single source of truth.
+ */
+export function recalculateAndSyncVersion(rootDir: string = process.cwd()): InuoVersionSpec {
+  const ver = calculateInuoVersion(rootDir);
+  const fullVer = ver.fullVersionString;
+
+  // 1. Synchronize package.json
+  const pkgPath = path.join(rootDir, 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    try {
+      const rawPkg = fs.readFileSync(pkgPath, 'utf8');
+      const pkg = JSON.parse(rawPkg);
+      if (pkg.version !== fullVer) {
+        pkg.version = fullVer;
+        fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+      }
+    } catch {
+      // Ignore write error if unparseable
+    }
+  }
+
+  // 2. Synchronize inuo-manifest.json
+  const manifestPath = path.join(rootDir, 'inuo-manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    try {
+      const rawMan = fs.readFileSync(manifestPath, 'utf8');
+      const manifest = JSON.parse(rawMan);
+      if (manifest.SPEC_VERSION !== fullVer || manifest.cliVersion !== fullVer) {
+        manifest.SPEC_VERSION = fullVer;
+        manifest.cliVersion = fullVer;
+        manifest.lastSyncedAt = new Date().toISOString();
+        fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+      }
+    } catch {
+      // Ignore write error
+    }
+  }
+
+  // 3. Synchronize INUO_SPEC.md
+  const specPath = path.join(rootDir, 'INUO_SPEC.md');
+  if (fs.existsSync(specPath)) {
+    try {
+      let specText = fs.readFileSync(specPath, 'utf8');
+      if (!specText.includes(`"SPEC_VERSION": "${fullVer}"`)) {
+        specText = specText.replace(/\* \*\*`SPEC_VERSION`\*\*: ".*?"/, `* **\`SPEC_VERSION\`**: "${fullVer}"`);
+        fs.writeFileSync(specPath, specText);
+      }
+    } catch {
+      // Ignore write error
+    }
+  }
+
+  return ver;
 }

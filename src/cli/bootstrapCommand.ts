@@ -15,7 +15,7 @@ This specification prompt governs all autonomous reasoning, code generation, and
 ## Operational Baseline
 * NEED = (VERB) + (OBJECT)
 * OFFER = (COMP_VERB) + (OBJECT)
-* SPEC_VERSION: "0.1.0"
+* SPEC_VERSION: "01.95.02"
 `;
     fs.writeFileSync(paths.specPath, defaultSpec, 'utf8');
     console.log('\x1b[32m%s\x1b[0m', '✔ Generated persistent system prompt: INUO_SPEC.md');
@@ -25,18 +25,17 @@ This specification prompt governs all autonomous reasoning, code generation, and
 
   if (!fs.existsSync(paths.manifestPath)) {
     const newManifest: InuoManifest = {
-      SPEC_VERSION: '0.1.0',
-      cliVersion: '0.1.0',
+      SPEC_VERSION: '01.95.02',
+      cliVersion: '01.95.02',
       lastSyncedAt: new Date().toISOString(),
       moduleMappings: [
         { pairKey: 'Request+Food packet', modulePath: 'src/interfaces/Need.ts' },
         { pairKey: 'Consult+Geotechnical survey', modulePath: 'src/interfaces/Need.ts' },
         { pairKey: 'Ride+Commute to work', modulePath: 'src/interfaces/Need.ts' },
       ],
-
     };
     fs.writeFileSync(paths.manifestPath, JSON.stringify(newManifest, null, 2), 'utf8');
-    console.log('\x1b[32m%s\x1b[0m', '✔ Generated baseline manifest: inuo-manifest.json (v0.1.0)');
+    console.log('\x1b[32m%s\x1b[0m', '✔ Generated baseline manifest: inuo-manifest.json (v01.95.02)');
   } else {
     console.log('\x1b[32m%s\x1b[0m', '✔ Validated existing manifest: inuo-manifest.json');
   }

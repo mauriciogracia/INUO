@@ -2,12 +2,13 @@ import fs from 'fs';
 import { getProjectPaths, loadManifest } from './context';
 import { runRollback } from './rollbackCommand';
 import { SyncResult } from '../interfaces/SyncResult';
+import { recalculateAndSyncVersion } from './versionEngine';
 
 export function extractSpecVersion(specPath: string): string | null {
   if (!fs.existsSync(specPath)) return null;
   try {
     const content = fs.readFileSync(specPath, 'utf8');
-    const match = content.match(/SPEC_VERSION:\s*["']?([0-9]+\.[0-9]+\.[0-9]+)["']?/i);
+    const match = content.match(/SPEC_VERSION:\s*["']?([0-9A-Za-z\.]+)["']?/i);
     return match ? match[1] : null;
   } catch {
     return null;
@@ -15,8 +16,10 @@ export function extractSpecVersion(specPath: string): string | null {
 }
 
 export function checkAndApplySyncProtocol(rootDir: string = process.cwd()): SyncResult {
+  recalculateAndSyncVersion(rootDir);
   const paths = getProjectPaths(rootDir);
   const manifest = loadManifest(paths.manifestPath);
+
 
   if (!manifest) {
     return {
