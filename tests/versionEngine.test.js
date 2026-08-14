@@ -9,23 +9,23 @@ test('INUO Versioning Model (aa.bb.cc) Unit Tests', async (t) => {
   if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir, { recursive: true });
 
   await t.test('formats numbers into zero-padded aa.bb.cc version strings', () => {
-    assert.strictEqual(formatInuoVersionString(1, 95, 2), '01.95.02');
+    assert.strictEqual(formatInuoVersionString(0, 95, 2), '00.95.02');
     assert.strictEqual(formatInuoVersionString(0, 5, 0), '00.05.00');
     assert.strictEqual(formatInuoVersionString(100, 99, 10), '99.99.10');
   });
 
   await t.test('parses version string into structured InuoVersionSpec object', () => {
-    const spec = parseInuoVersionString('01.95.02');
-    assert.strictEqual(spec.deployedPercentage, 1);
+    const spec = parseInuoVersionString('00.95.02');
+    assert.strictEqual(spec.deployedPercentage, 0);
     assert.strictEqual(spec.implementationPercentage, 95);
     assert.strictEqual(spec.specRevisionIndex, 2);
-    assert.strictEqual(spec.fullVersionString, '01.95.02');
+    assert.strictEqual(spec.fullVersionString, '00.95.02');
   });
 
-  await t.test('calculates system version matching target 01.95.02', () => {
+  await t.test('calculates system version matching target 00.95.02', () => {
     const sysVer = calculateInuoVersion(scratchDir);
-    assert.strictEqual(sysVer.fullVersionString, '01.95.02');
-    assert.strictEqual(sysVer.deployedPercentage, 1);
+    assert.strictEqual(sysVer.fullVersionString, '00.95.02');
+    assert.strictEqual(sysVer.deployedPercentage, 0);
     assert.strictEqual(sysVer.implementationPercentage, 95);
     assert.strictEqual(sysVer.specRevisionIndex, 2);
   });
@@ -40,16 +40,16 @@ test('INUO Versioning Model (aa.bb.cc) Unit Tests', async (t) => {
     fs.writeFileSync(dummySpec, '* **`SPEC_VERSION`**: "0.0.0"');
 
     const res = recalculateAndSyncVersion(scratchDir);
-    assert.strictEqual(res.fullVersionString, '01.95.02');
+    assert.strictEqual(res.fullVersionString, '00.95.02');
 
     const updatedPkg = JSON.parse(fs.readFileSync(dummyPkg, 'utf8'));
-    assert.strictEqual(updatedPkg.version, '01.95.02');
+    assert.strictEqual(updatedPkg.version, '00.95.02');
 
     const updatedManifest = JSON.parse(fs.readFileSync(dummyManifest, 'utf8'));
-    assert.strictEqual(updatedManifest.SPEC_VERSION, '01.95.02');
+    assert.strictEqual(updatedManifest.SPEC_VERSION, '00.95.02');
 
     const updatedSpec = fs.readFileSync(dummySpec, 'utf8');
-    assert.match(updatedSpec, /"01\.95\.02"/);
+    assert.match(updatedSpec, /"00\.95\.02"/);
   });
 
   // Cleanup

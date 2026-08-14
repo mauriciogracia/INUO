@@ -27,8 +27,9 @@ export function calculateInuoVersion(rootDir: string = process.cwd()): InuoVersi
   const paths = getProjectPaths(rootDir);
   const state = loadState(paths.statePath);
 
-  // aa: Deployed percentage (1% for local CLI operational distribution)
-  const aa = 1;
+  // aa: Deployed percentage (0% - nothing deployed to Firebase/cloud yet)
+  const aa = 0;
+
 
   // bb: Codebase implementation percentage (95% verified across test suite)
   const bb = 95;

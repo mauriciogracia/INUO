@@ -16,23 +16,23 @@ test('Sync Engine Automated Detection & Verification Unit Tests', async (t) => {
   await t.test('detects when manifest and spec are synchronized', () => {
     const result = checkAndApplySyncProtocol(tmpDir);
     assert.equal(result.status, 'Synced');
-    assert.equal(result.currentManifestVersion, '01.95.02');
+    assert.equal(result.currentManifestVersion, '00.95.02');
   });
 
-  await t.test('detects spec version upgrade (e.g. SPEC_VERSION: "01.95.03") and applies verification update', () => {
-    // Simulate updating SPEC_VERSION in INUO_SPEC.md to 01.95.03
+  await t.test('detects spec version upgrade (e.g. SPEC_VERSION: "00.95.03") and applies verification update', () => {
+    // Simulate updating SPEC_VERSION in INUO_SPEC.md to 00.95.03
     const newSpecContent = `# INUO Core Persistent System Prompt (\`INUO_SPEC.md\`)
-SPEC_VERSION: "01.95.03"
+SPEC_VERSION: "00.95.03"
 `;
     fs.writeFileSync(specPath, newSpecContent, 'utf8');
 
     const result = checkAndApplySyncProtocol(tmpDir);
     assert.equal(result.status, 'VerificationPassed');
-    assert.equal(result.currentManifestVersion, '01.95.03');
+    assert.equal(result.currentManifestVersion, '00.95.03');
 
     // Verify manifest updated
     const manifest = loadManifest(manifestPath);
-    assert.equal(manifest.SPEC_VERSION, '01.95.03');
+    assert.equal(manifest.SPEC_VERSION, '00.95.03');
   });
 
   // Cleanup
