@@ -1,0 +1,19 @@
+{
+  "SPEC_VERSION": "0.1.0",
+  "cliVersion": "0.1.0",
+  "lastSyncedAt": "2026-08-14T01:35:00-05:00",
+  "moduleMappings": [
+    {
+      "pairKey": "Request+Food packet",
+      "modulePath": "src/interfaces/Need.ts"
+    },
+    {
+      "pairKey": "Consult+Geotechnical survey",
+      "modulePath": "src/interfaces/Need.ts"
+    },
+    {
+      "pairKey": "Ride+Commute to work",
+      "modulePath": "src/interfaces/Need.ts"
+    }
+  ]
+}

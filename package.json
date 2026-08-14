@@ -1,0 +1,33 @@
+{
+  "name": "inuo-cli",
+  "version": "0.1.0",
+  "description": "Interactive shell CLI for the INUO Platform matching protocol and specification lifecycle",
+  "main": "dist/models/index.js",
+  "bin": {
+    "inuo": "./bin/inuo.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "pretest": "npm run build",
+    "cli": "npm run build && node bin/inuo.js",
+    "init": "npm run build && node bin/inuo.js init",
+    "status": "npm run build && node bin/inuo.js status",
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "inuo",
+    "matching-protocol",
+    "interaction-engine",
+    "specification-lifecycle",
+    "self-orchestrating"
+  ],
+  "author": "INUO Development Team",
+  "license": "MIT",
+  "dependencies": {
+    "@google/genai": "^0.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3"
+  }
+}
