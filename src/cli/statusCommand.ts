@@ -1,6 +1,8 @@
 import { createContext } from './context';
+import { recalculateAndSyncVersion } from './versionEngine';
 
 export function runStatus(rootDir: string = process.cwd()): void {
+  recalculateAndSyncVersion(rootDir);
   const ctx = createContext(rootDir);
 
   console.log('\x1b[36m%s\x1b[0m', '=== INUO Platform Status ===');

@@ -636,7 +636,8 @@ export function dispatchSingleCommand(args: string[], rootDir: string = process.
 
 function printHelp(): void {
   console.log('\x1b[36m%s\x1b[0m', '=== INUO Interactive Shell Command Reference ===');
-  console.log('  \x1b[1mversion\x1b[0m                                Display structured aa.bb.cc version breakdown');
+  console.log('  \x1b[1mversion\x1b[0m                                Display current Deployed.SpecRevision.Implementation version breakdown');
+
   console.log('  \x1b[1mquestion list / ask / answer\x1b[0m        Interactive Divide & Conquer single/multi-choice questions');
   console.log('  \x1b[1msocial list / broadcast\x1b[0m               Multi-platform social media API broadcast engine');
   console.log('  \x1b[1mmode status / promptMe / letMeServeYou / language <L>\x1b[0m Dual operating modes & concierge host');
