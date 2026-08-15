@@ -16,7 +16,7 @@ export function generateSelfAwarenessResponse(
   const state = loadState(paths.statePath);
   const trust = getTrustRecord(callerEntityId, callerEntityType, rootDir);
 
-  const specVersion = "00.02.95";
+  const specVersion = "00.03.70";
 
   // 1. Untrusted / Blacklisted Gate
   if (trust.isBlacklisted || trust.trustScore < 30) {
@@ -45,7 +45,7 @@ export function generateSelfAwarenessResponse(
       (d) => `${d.deviceName} (${d.deviceType})`,
     );
 
-    const text = `I am ${TOOL_NAME} (v00.02.95) — an intent-matching platform built on the canonical formula NEED = (VERB) + (OBJECT).
+    const text = `I am ${TOOL_NAME} (v00.03.70) — an intent-matching platform built on the canonical formula NEED = (VERB) + (OBJECT).
 I am running as Master Mind [${state.masterMindId || "primary"}].
 [Governance]: Full Master Trainer access granted.
 [Principles]: ${principlesList.join(" | ")}
@@ -76,7 +76,7 @@ I am running as Master Mind [${state.masterMindId || "primary"}].
 
   // 3. MediumTrust Disclosure
   if (trust.trustScore >= 50) {
-    const text = `I am ${TOOL_NAME} (v00.02.95) — an intent-matching platform that connects Needs and Offers via canonical formulas NEED = (VERB) + (OBJECT).
+    const text = `I am ${TOOL_NAME} (v00.03.70) — an intent-matching platform that connects Needs and Offers via canonical formulas NEED = (VERB) + (OBJECT).
 I support multi-device interactions across Android, iOS, Smart TV, Smart Watch, and Desktop CLI.`;
 
     return {

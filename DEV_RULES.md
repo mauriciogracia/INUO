@@ -97,6 +97,15 @@ This document outlines the mandatory architectural principles, coding standards,
 
 ## 6. Code Organization & Type Directives
 
+### 6.0 Adaptive Learning Integrity
+
+- Persistent JSON state and prompt conditioning **MUST NOT** be described as model-weight training.
+- Learned preferences, corrections, memories, skills, and behaviors **MUST** preserve owner, provenance, trust, and sharing scope.
+- User-scoped learning defaults to private and **MUST NOT** affect another user or federate without explicit consent.
+- Corrections and behaviors become operational only through relevant retrieval or executable activation; storage alone is insufficient.
+- Fine-tuning or weight adapters **MUST** use a provider adapter and produce a versioned, checksummed, auditable, reversible artifact.
+- No learned data or weight artifact may override immutable Master Trainer principles.
+
 ### 6.1 Single Definition per File & Directory Separation Rule
 
 - Every `type` alias, `enum`, and `interface` **MUST** reside in its own dedicated file in its respective directory under `src/`:

@@ -68,7 +68,7 @@ export function loadEnvironment(rootDir: string = process.cwd()): Environment {
     } catch {}
   }
 
-  let specVersion = "00.02.95";
+  let specVersion = "00.03.70";
   if (fs.existsSync(manifestPath)) {
     try {
       const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
@@ -79,7 +79,7 @@ export function loadEnvironment(rootDir: string = process.cwd()): Environment {
   return {
     geminiApiKey,
     specVersion,
-    cliVersion: "00.02.95",
+    cliVersion: "00.03.70",
     rootDir,
     manifestPath,
     specPath,

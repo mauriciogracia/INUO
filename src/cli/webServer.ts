@@ -97,7 +97,10 @@ export function startWebServer(options: WebServerOptions = {}): http.Server {
       succinct: modeConfig.isSuccinctMode !== false,
       debugLevel:
         modeConfig.debugLevel !== undefined ? modeConfig.debugLevel : 1,
-      aiUsage: (({ requestCount, totalTokens }) => ({ requestCount, totalTokens }))(getSessionStats()),
+      aiUsage: (({ requestCount, totalTokens }) => ({
+        requestCount,
+        totalTokens,
+      }))(getSessionStats()),
     });
   });
 

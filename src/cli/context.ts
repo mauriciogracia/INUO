@@ -256,7 +256,6 @@ export function loadState(statePath: string): StateData {
       interactiveQuestions: [],
       progressiveSyncs: [],
       userPreferences: [],
-
     };
   }
   try {

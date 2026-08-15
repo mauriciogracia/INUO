@@ -35,7 +35,7 @@ const headerBox = blessed.box({
   left: 0,
   width: "100%",
   height: 3,
-  content: `{center}{bold}{cyan-fg}=== ${TOOL_NAME} ASCII Web Client (v00.02.95) ==={/cyan-fg}{/bold}\n{yellow-fg}http://localhost:3000/api/stream{/yellow-fg}{/center}`,
+  content: `{center}{bold}{cyan-fg}=== ${TOOL_NAME} ASCII Web Client (v00.03.70) ==={/cyan-fg}{/bold}\n{yellow-fg}http://localhost:3000/api/stream{/yellow-fg}{/center}`,
   tags: true,
   border: { type: "line" },
   style: { border: { fg: "#38bdf8" } },

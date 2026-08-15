@@ -4,7 +4,7 @@ import { getProjectPaths, loadState } from "./context";
 import { writeOutput } from "./outputRouter";
 import { OutputChannelEnum } from "../enums/OutputChannelEnum";
 import { getPreference, buildPreferencePromptBlock } from "./preferenceEngine";
-import { addSessionTokens } from './usageEngine';
+import { addSessionTokens } from "./usageEngine";
 export interface ParsedIntentResult {
   type:
     | "NEED"

@@ -17,7 +17,10 @@ export async function runAiCommand(
   if (sub === "usage") {
     if (args[1] === "--reset") {
       resetSessionStats();
-      writeOutput(OutputChannelEnum.USER_REPLY, "✔ Session usage counters reset.");
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        "✔ Session usage counters reset.",
+      );
       return;
     }
     const env = loadEnvironment(rootDir);
@@ -25,7 +28,10 @@ export async function runAiCommand(
       queryProviderCapacity(rootDir),
       Promise.resolve(getSessionStats()),
     ]);
-    writeOutput(OutputChannelEnum.USER_REPLY, formatUsageDisplay(capacity, session, env.tokenBudgetMonthly));
+    writeOutput(
+      OutputChannelEnum.USER_REPLY,
+      formatUsageDisplay(capacity, session, env.tokenBudgetMonthly),
+    );
     return;
   }
 

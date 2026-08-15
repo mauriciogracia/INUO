@@ -26,7 +26,7 @@ function getSystemVersion(): string {
   } catch {
     /* fall through to default */
   }
-  return "00.02.95";
+  return "00.03.70";
 }
 
 function startApp(): void {

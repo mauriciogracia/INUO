@@ -10,7 +10,7 @@ These preferences are not remembered, so the same correction is needed conversat
 
 The **Preference Engine** (`src/cli/preferenceEngine.ts`) detects formatting intent signals inline,
 persists them per user, injects them into every subsequent LLM prompt,
-and exports them as part of the training dataset so they can be shared with other iNoU nodes.
+and exports them as private user-owned training data for authorized backup or migration.
 
 ---
 
@@ -82,11 +82,12 @@ giving it higher priority than the default mode settings.
 
 ---
 
-## Training Dataset Export & Sharing
+## Training Dataset Export & Scope
 
-`exportTrainingData()` includes `userPreferences[]` in the exported JSON.
-When two iNoU nodes merge training datasets, format preferences from contributing users
-are available to other nodes — enabling shared style conventions across a Colmena federation.
+`exportTrainingData()` includes `userPreferences[]` in the exported JSON. These records remain
+private to their owners by default and must not affect other users or federate to Colmena peers
+without explicit, revocable consent and ownership metadata. The current merge path does not yet
+import preference records; scoped import, trust checks, and consent enforcement remain pending.
 
 ---
 
