@@ -1,47 +1,48 @@
-import fs from 'fs';
-import path from 'path';
-import { GoogleGenAI } from '@google/genai';
-import { loadEnvironment } from './environment';
-import { runNeedCommand } from './needCommand';
-import { runTest } from './testCommand';
-import { loadManifest } from './context';
+import fs from "fs";
+import path from "path";
+import { executeAiCall } from "./aiClient";
+import { runNeedCommand } from "./needCommand";
+import { runTest } from "./testCommand";
+import { loadManifest } from "./context";
+import { createSnapshot, rollbackSnapshot } from "./learnEngine";
+import { calculateInuoVersion, recalculateAndSyncVersion } from "./versionEngine";
+import { writeOutput } from "./outputRouter";
+import { OutputChannelEnum } from "../enums/OutputChannelEnum";
 
-function bumpSemver(versionStr: string): string {
-  const parts = versionStr.split('.').map(Number);
-  if (parts.length === 3 && !parts.some(isNaN)) {
-    parts[2] += 1;
-    return parts.join('.');
-  }
-  return '0.1.1';
-}
-
-export async function runEvolveCommand(goalInput: string, rootDir: string = process.cwd()): Promise<void> {
-  console.log('\x1b[36m%s\x1b[0m', '=== INUO-on-INUO Self-Orchestrating Dev Lifecycle ===');
-  console.log(`\x1b[1mPO Intent (The Need):\x1b[0m "${goalInput}"\n`);
-
-  const env = loadEnvironment(rootDir);
-
-  if (!env.geminiApiKey) {
-    console.log('\x1b[33m%s\x1b[0m', '[INUO Self-Evolution] Gemini API Key is required to evolve INUO.');
-    console.log('Connect your key by typing: \x1b[1mkey <YOUR_GEMINI_API_KEY>\x1b[0m\n');
+export async function runEvolveCommand(
+  goalInput: string,
+  rootDir: string = process.cwd(),
+): Promise<void> {
+  const cleanGoal = (goalInput || "").trim();
+  if (!cleanGoal) {
+    writeOutput(
+      OutputChannelEnum.USER_REPLY,
+      "Usage: evolve <feature or capability goal>\nExample: evolve add support for OAuth2 authentication in auth command",
+    );
     return;
   }
 
-  const manifestPath = path.join(rootDir, 'inuo-manifest.json');
-  const specPath = path.join(rootDir, 'INUO_SPEC.md');
+  writeOutput(
+    OutputChannelEnum.USER_REPLY,
+    `\x1b[36m=== INUO-on-INUO Self-Orchestrating Dev Lifecycle ===\x1b[0m\n\x1b[1mPO Intent (The Need):\x1b[0m "${cleanGoal}"\n`,
+  );
 
-  const manifestBackup = fs.existsSync(manifestPath) ? fs.readFileSync(manifestPath, 'utf8') : null;
-  const specBackup = fs.existsSync(specPath) ? fs.readFileSync(specPath, 'utf8') : null;
+  const manifestPath = path.join(rootDir, "inuo-manifest.json");
+  const mainSpec = path.join(rootDir, "main-specs-goals.md");
+  const fallbackSpec = path.join(rootDir, "INUO_SPEC.md");
+  const specPath = fs.existsSync(mainSpec) ? mainSpec : fallbackSpec;
+
+  // 1. Transaction Snapshot
+  const snapshot = createSnapshot(rootDir);
 
   try {
-    const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
     const prompt = `You are the INUO-on-INUO Self-Orchestration Architect.
-The Product Owner has given the following feature goal: "${goalInput}"
+The Product Owner has given the following feature goal: "${cleanGoal}"
 
-Your task is to evolve the INUO codebase AND specification following DEV_RULES.md:
+Your task is to evolve the INUO codebase AND specification following dev-rules.md:
 1. Decompose the goal into Atomic Needs: NEED = (VERB) + (OBJECT).
 2. Every type, enum, and interface MUST be in its own single-definition file under src/interfaces/, src/types/, or src/enums/.
-3. Write a markdown specification snippet describing this new feature to be appended to INUO_SPEC.md.
+3. Write a markdown specification snippet describing this new feature to be appended to main-specs-goals.md.
 
 Return ONLY a raw JSON object with NO markdown formatting matching this structure:
 {
@@ -53,105 +54,132 @@ Return ONLY a raw JSON object with NO markdown formatting matching this structur
   "newInterfaces": [
     {
       "filename": "InterfaceName.ts",
-      "content": "export interface InterfaceName { ... }"
+      "content": "export interface InterfaceName {\\n  id: string;\\n}"
     }
   ],
   "newTypes": [
     {
       "filename": "TypeName.ts",
-      "content": "export type TypeName = ...;"
+      "content": "export type TypeName = string;"
     }
   ]
 }`;
 
-    console.log('\x1b[36m%s\x1b[0m', '[Semantic Decomposition] LLM Architect analyzing intent & catalog...');
-    const response = await ai.models.generateContent({
-      model: env.defaultModel,
-      contents: prompt,
-    });
+    writeOutput(
+      OutputChannelEnum.USER_REPLY,
+      `\x1b[36m[Semantic Decomposition] LLM Architect synthesizing codebase expansion...\x1b[0m`,
+    );
 
-    const text = response.text?.trim() || '';
-    const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const responseText = await executeAiCall(prompt, rootDir);
+    const cleanJson = responseText
+      .replace(/```json/gi, "")
+      .replace(/```/gi, "")
+      .trim();
     const plan = JSON.parse(cleanJson);
 
-    console.log(`\x1b[32m✔ Evolution Plan Generated:\x1b[0m ${plan.summary}\n`);
+    writeOutput(
+      OutputChannelEnum.USER_REPLY,
+      `\x1b[32m✔ Evolution Plan Generated:\x1b[0m ${plan.summary}\n`,
+    );
 
     if (Array.isArray(plan.atomicNeeds)) {
       for (const n of plan.atomicNeeds) {
-        runNeedCommand(['create', '--verb', n.verb || 'Request', '--object', n.object || goalInput], rootDir);
+        runNeedCommand(
+          ["create", "--verb", n.verb || "Evolve", "--object", n.object || cleanGoal],
+          rootDir,
+        );
       }
     }
 
-    const createdFiles: string[] = [];
-
     if (Array.isArray(plan.newInterfaces)) {
       for (const item of plan.newInterfaces) {
-        const filePath = path.join(rootDir, 'src', 'interfaces', item.filename);
-        fs.writeFileSync(filePath, item.content, 'utf8');
-        createdFiles.push(filePath);
+        const filePath = path.join(rootDir, "src", "interfaces", item.filename);
+        fs.writeFileSync(filePath, item.content, "utf8");
+        snapshot.createdFiles.push(filePath);
 
-        const indexPath = path.join(rootDir, 'src', 'interfaces', 'index.ts');
-        const exportName = item.filename.replace('.ts', '');
-        const indexContent = fs.readFileSync(indexPath, 'utf8');
+        const indexPath = path.join(rootDir, "src", "interfaces", "index.ts");
+        const exportName = item.filename.replace(".ts", "");
+        const indexContent = fs.readFileSync(indexPath, "utf8");
         if (!indexContent.includes(`./${exportName}`)) {
-          fs.appendFileSync(indexPath, `export * from './${exportName}';\n`, 'utf8');
+          fs.appendFileSync(
+            indexPath,
+            `export * from "./${exportName}";\n`,
+            "utf8",
+          );
         }
-        console.log('\x1b[32m%s\x1b[0m', `✔ Generated Interface: src/interfaces/${item.filename}`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `✔ Generated Interface: [src/interfaces/${item.filename}](file:///d:/repos/INUO/src/interfaces/${item.filename})`,
+        );
       }
     }
 
     if (Array.isArray(plan.newTypes)) {
       for (const item of plan.newTypes) {
-        const filePath = path.join(rootDir, 'src', 'types', item.filename);
-        fs.writeFileSync(filePath, item.content, 'utf8');
-        createdFiles.push(filePath);
+        const filePath = path.join(rootDir, "src", "types", item.filename);
+        fs.writeFileSync(filePath, item.content, "utf8");
+        snapshot.createdFiles.push(filePath);
 
-        const indexPath = path.join(rootDir, 'src', 'types', 'index.ts');
-        const exportName = item.filename.replace('.ts', '');
-        const indexContent = fs.readFileSync(indexPath, 'utf8');
+        const indexPath = path.join(rootDir, "src", "types", "index.ts");
+        const exportName = item.filename.replace(".ts", "");
+        const indexContent = fs.readFileSync(indexPath, "utf8");
         if (!indexContent.includes(`./${exportName}`)) {
-          fs.appendFileSync(indexPath, `export * from './${exportName}';\n`, 'utf8');
+          fs.appendFileSync(
+            indexPath,
+            `export * from "./${exportName}";\n`,
+            "utf8",
+          );
         }
-        console.log('\x1b[32m%s\x1b[0m', `✔ Generated Type Alias: src/types/${item.filename}`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `✔ Generated Type Alias: [src/types/${item.filename}](file:///d:/repos/INUO/src/types/${item.filename})`,
+        );
       }
     }
 
-    console.log('\n\x1b[36m%s\x1b[0m', '[Verification] Verifying generated evolution code...');
+    writeOutput(
+      OutputChannelEnum.USER_REPLY,
+      `\n\x1b[36m[Verification] Verifying generated evolution code across test suites...\x1b[0m`,
+    );
+
     try {
       runTest(undefined, rootDir);
     } catch (testErr: any) {
-      console.log('\x1b[31m%s\x1b[0m', `[Verification Failed] ${testErr.message}. Initiating Automated Rollback...`);
-      if (manifestBackup) fs.writeFileSync(manifestPath, manifestBackup, 'utf8');
-      if (specBackup) fs.writeFileSync(specPath, specBackup, 'utf8');
-      for (const f of createdFiles) {
-        if (fs.existsSync(f)) fs.unlinkSync(f);
-      }
-      console.log('\x1b[33m%s\x1b[0m', '✔ Automated Rollback Complete! Restored state to previous working version.');
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[31m[Verification Failed] ${testErr.message}. Executing Atomic Rollback...\x1b[0m`,
+      );
+      rollbackSnapshot(snapshot, rootDir);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[33m✔ Automated Rollback Complete! Restored state to previous working version.\x1b[0m`,
+      );
       return;
     }
 
-    const manifest = loadManifest(manifestPath);
-
-    if (manifest) {
-      const oldSpecVersion = manifest.SPEC_VERSION || '0.1.0';
-      const newSpecVersion = bumpSemver(oldSpecVersion);
-
-      manifest.SPEC_VERSION = newSpecVersion;
-      manifest.lastSyncedAt = new Date().toISOString();
-      fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
-
-      if (plan.specSnippet && fs.existsSync(specPath)) {
-        let specContent = fs.readFileSync(specPath, 'utf8');
-        specContent = specContent.replace(/SPEC_VERSION:\s*["']?[0-9]+\.[0-9]+\.[0-9]+["']?/i, `SPEC_VERSION: "${newSpecVersion}"`);
-        specContent += `\n\n## Evolved Spec (${newSpecVersion}): ${goalInput}\n${plan.specSnippet}\n`;
-        fs.writeFileSync(specPath, specContent, 'utf8');
-      }
-
-      console.log('\x1b[32m%s\x1b[0m', `✔ [Spec Evolution] Updated INUO_SPEC.md & bumped SPEC_VERSION: "${oldSpecVersion}" -> "${newSpecVersion}"`);
+    // Update spec snippet
+    if (plan.specSnippet && fs.existsSync(specPath)) {
+      let specContent = fs.readFileSync(specPath, "utf8");
+      specContent += `\n\n## Evolved Feature: ${cleanGoal}\n${plan.specSnippet}\n`;
+      fs.writeFileSync(specPath, specContent, "utf8");
     }
 
-    console.log('\x1b[33m%s\x1b[0m', '\n★ INUO-on-INUO Self-Evolution Complete! Specification & Codebase synchronized.');
+    recalculateAndSyncVersion(rootDir);
+    const updatedVer = calculateInuoVersion(rootDir);
+
+    writeOutput(
+      OutputChannelEnum.USER_REPLY,
+      `\x1b[32m✔ [Spec & Code Evolution] Codebase synthesized and advanced to version v${updatedVer.fullVersionString}!\x1b[0m`,
+    );
+    writeOutput(
+      OutputChannelEnum.USER_REPLY,
+      `\x1b[33m★ INUO-on-INUO Self-Evolution Complete! Specification & Codebase synchronized.\x1b[0m`,
+    );
   } catch (err: any) {
-    console.log('\x1b[31m%s\x1b[0m', `[Self-Evolution Error] ${err.message}`);
+    writeOutput(
+      OutputChannelEnum.USER_REPLY,
+      `\x1b[31m[Self-Evolution Error] ${err.message}\x1b[0m`,
+    );
+    rollbackSnapshot(snapshot, rootDir);
   }
 }

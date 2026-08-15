@@ -9,6 +9,7 @@ export interface WebUiStrings {
   send: string;
   placeholder: string;
   thinking: string;
+  analyzing: string;
   thinkingHint: string;
   connected: string;
   errorServer: string;
@@ -29,6 +30,7 @@ const strings: Record<string, WebUiStrings> = {
     send: "Enviar",
     placeholder: "Hola · Hello · Bonjour · Hallo · Olá",
     thinking: "Pensando",
+    analyzing: "Analizando...",
     thinkingHint: "ver detalles en",
     connected: "🚀 iNoU conectado. Flujo SSE en tiempo real activo.",
     errorServer:
@@ -49,6 +51,7 @@ const strings: Record<string, WebUiStrings> = {
     send: "Send",
     placeholder: "Hola · Hello · Bonjour · Hallo · Olá",
     thinking: "Thinking",
+    analyzing: "Analyzing...",
     thinkingHint: "see details in",
     connected: "🚀 iNoU Web UI connected. Real-time SSE stream active.",
     errorServer:
@@ -69,6 +72,7 @@ const strings: Record<string, WebUiStrings> = {
     send: "Senden",
     placeholder: "Hola · Hello · Bonjour · Hallo · Olá",
     thinking: "Denkend",
+    analyzing: "Analysiere...",
     thinkingHint: "Details in",
     connected: "🚀 iNoU Web UI verbunden. Echtzeit-SSE-Stream aktiv.",
     errorServer:
@@ -89,6 +93,7 @@ const strings: Record<string, WebUiStrings> = {
     send: "Envoyer",
     placeholder: "Hola · Hello · Bonjour · Hallo · Olá",
     thinking: "Réflexion",
+    analyzing: "Analyse en cours...",
     thinkingHint: "voir les détails dans",
     connected: "🚀 iNoU Web UI connecté. Flux SSE en temps réel actif.",
     errorServer:
@@ -109,6 +114,7 @@ const strings: Record<string, WebUiStrings> = {
     send: "Enviar",
     placeholder: "Hola · Hello · Bonjour · Hallo · Olá",
     thinking: "Pensando",
+    analyzing: "Analisando...",
     thinkingHint: "ver detalhes em",
     connected: "🚀 iNoU Web UI conectado. Fluxo SSE em tempo real ativo.",
     errorServer:

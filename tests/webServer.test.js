@@ -144,7 +144,7 @@ test("LLM configuration HTTP integration", async (t) => {
       assert.equal(response.body.uiAction.setup.engineName, "gemini");
       assert.equal(
         response.body.uiAction.setup.defaultModel,
-        "gemini-3.6-flash",
+        "gemini-flash-latest",
       );
     },
   );
@@ -157,7 +157,7 @@ test("LLM configuration HTTP integration", async (t) => {
       {
         configurationName: "unsafe",
         engineName: "gemini",
-        model: "gemini-3.6-flash",
+        model: "gemini-flash-latest",
         apiKey: "must-not-be-accepted",
       },
     );

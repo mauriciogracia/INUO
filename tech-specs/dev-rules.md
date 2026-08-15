@@ -1,4 +1,4 @@
-# INUO Development Rules & Architectural Directives (`DEV_RULES.md`)
+# INUO Development Rules & Architectural Directives (`dev-rules.md`)
 
 This document outlines the mandatory architectural principles, coding standards, and governance rules for all contributors and autonomous agents (Seed Agents) developing on the **INUO Platform**.
 
@@ -51,6 +51,11 @@ This document outlines the mandatory architectural principles, coding standards,
 - All interaction logs, messages, and state transitions **MUST** be preserved in an immutable audit ledger (`AuditTrailEntry`).
 - Methods attempting to delete or overwrite sent messages or transaction logs are prohibited.
 
+### 3.3 Cost Governance & Token Conservation Directive
+
+- Systems **MUST** prioritize free-tier models (`gemini-2.5-flash`, local Ollama, zero-cost quotas) first.
+- When free-tier quotas are exhausted, autonomous components **MUST NEVER** execute paid or billable model calls without explicit, verified human user consent.
+
 ---
 
 ## 4. Ecosystem & Infrastructure Directives
@@ -76,7 +81,7 @@ This document outlines the mandatory architectural principles, coding standards,
 
 ### 5.2 Bootstrapping & Manifest Sync
 
-- Every environment initialization **MUST** load `INUO_SPEC.md` as its persistent system prompt.
+- Every environment initialization **MUST** load `main-specs-goals.md` as its persistent system prompt.
 - Every release **MUST** update `inuo-manifest.json` with the target `SPEC_VERSION` adhering to Semantic Versioning (`MAJOR.MINOR.PATCH`).
 - Structural directory mappings **MUST** map `Verb + Object` pairs to discrete, isolated service modules.
 
@@ -124,3 +129,17 @@ This document outlines the mandatory architectural principles, coding standards,
   - **Liskov Substitution Principle (LSP)**: Derived adapters and domain implementations must be fully substitutable for their base interface abstractions (`EcosystemAdapter`, `Need`).
   - **Interface Segregation Principle (ISP)**: Interfaces must remain focused and granular so components depend only on the properties they actually consume.
   - **Dependency Inversion Principle (DIP)**: High-level lifecycle services and commands must depend on abstract interfaces (`Environment`, `InuoManifest`, `Need`) rather than hardcoded low-level details.
+
+### 6.3 Git Operations Policy
+
+- AI agents and automated tools **MUST NOT** execute Git operations (`git add`, `git commit`, `git push`, `git checkout`, `git restore`, `git reset`, etc.) unless explicitly instructed by the user in the prompt.
+- File staging and commit boundaries remain strictly under explicit user direction.
+
+### 6.4 Test Execution Policy
+
+- AI agents and automated tools **MUST NOT** run test suites (`npm test`, `npm run test:all`, `node --test`, etc.) unless explicitly specified by the user in the prompt, or when bumping version or executing major refactors.
+
+### 6.5 Custom Project Scripts Authorization
+
+- All custom scripts located in `scripts/` (`*.js`, `*.sh`) and repository root launchers (`listChildren.sh`, `inou.sh`, `iwc.sh`) are approved project utilities authorized for workspace execution.
+

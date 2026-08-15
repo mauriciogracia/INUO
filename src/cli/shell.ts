@@ -71,7 +71,11 @@ import {
 } from "./llmCommand";
 import { LLMConfigurationPrompter } from "../interfaces/LLMConfigurationPrompter";
 import { runNodeCommand } from "./nodeCommand";
-import { runSNCommand } from "./snCommand";
+import { runSocialMediaCommand, runSNCommand } from "./snCommand";
+import { runTierCommand } from "./tierCommand";
+import { runSetupCommand } from "./setupCommand";
+import { runLearnCommand } from "./learnCommand";
+import { resolveAlias, runAliasCommand } from "./aliasCommand";
 
 export async function executeShellLine(
   trimmed: string,
@@ -80,13 +84,30 @@ export async function executeShellLine(
 ): Promise<void> {
   if (!trimmed) return;
 
+  const resolvedLine = resolveAlias(trimmed, rootDir);
   const paths = getProjectPaths(rootDir);
   const stateData = loadState(paths.statePath);
 
-  const parts = trimmed.split(/\s+/);
+  const parts = resolvedLine.split(/\s+/);
   const cmd = parts[0].toLowerCase();
 
   switch (cmd) {
+    case "alias":
+      runAliasCommand(parts.slice(1), rootDir);
+      break;
+
+    case "learn":
+      await runLearnCommand(parts.slice(1), rootDir);
+      break;
+
+    case "setup":
+      await runSetupCommand(parts.slice(1), rootDir, llmPrompter);
+      break;
+
+    case "tier":
+      runTierCommand(parts.slice(1), rootDir);
+      break;
+
     case "version":
     case "-v":
     case "--version":
@@ -101,8 +122,9 @@ export async function executeShellLine(
       runSocialCommand(parts.slice(1), rootDir);
       break;
 
+    case "socialmedia":
     case "sn":
-      runSNCommand(parts.slice(1), rootDir);
+      runSocialMediaCommand(parts.slice(1), rootDir);
       break;
 
     case "mode":
@@ -211,14 +233,13 @@ export async function executeShellLine(
       runForgetCommand(parts.slice(1), rootDir);
       break;
 
-    case "learn":
     case "correct":
       if (parts[1] && parts[2]) {
         processUserCorrection(parts[1], parts.slice(2).join(" "), rootDir);
       } else {
         writeOutput(
           OutputChannelEnum.USER_REPLY,
-          "Usage: learn <topic> <learned_directive_rule>",
+          "Usage: correct <topic> <learned_directive_rule>",
         );
       }
       break;
@@ -232,7 +253,7 @@ export async function executeShellLine(
       break;
 
     case "evolve":
-      runEvolveCommand(rootDir);
+      await runEvolveCommand(parts.slice(1).join(" "), rootDir);
       break;
 
     case "sync":
@@ -481,6 +502,20 @@ export async function executeShellLine(
             result.correctionText,
             rootDir,
           );
+        } else if (result.type === "EVOLVE") {
+          const goal = result.goalText || result.object || trimmed;
+          writeOutput(
+            OutputChannelEnum.USER_REPLY,
+            `\x1b[36m✔ AI Identified Self-Evolution Goal: "${goal}"\x1b[0m`,
+          );
+          await runEvolveCommand(goal, rootDir);
+        } else if (result.type === "LEARN") {
+          const goal = result.goalText || result.object || trimmed;
+          writeOutput(
+            OutputChannelEnum.USER_REPLY,
+            `\x1b[36m✔ AI Identified Skill Learning Goal: "${goal}"\x1b[0m`,
+          );
+          await runLearnCommand(goal.split(/\s+/), rootDir);
         } else if (result.type === "EXIT") {
           writeOutput(
             OutputChannelEnum.USER_REPLY,

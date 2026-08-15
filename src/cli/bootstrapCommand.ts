@@ -18,7 +18,7 @@ This specification prompt governs all autonomous reasoning, code generation, and
 ## Operational Baseline
 * NEED = (VERB) + (OBJECT)
 * OFFER = (COMP_VERB) + (OBJECT)
-* SPEC_VERSION: "00.03.70"
+* SPEC_VERSION: "00.03.72"
 `;
     fs.writeFileSync(paths.specPath, defaultSpec, "utf8");
     console.log(
@@ -34,8 +34,8 @@ This specification prompt governs all autonomous reasoning, code generation, and
 
   if (!fs.existsSync(paths.manifestPath)) {
     const newManifest: InuoManifest = {
-      SPEC_VERSION: "00.03.70",
-      cliVersion: "00.03.70",
+      SPEC_VERSION: "00.03.72",
+      cliVersion: "00.03.72",
       lastSyncedAt: new Date().toISOString(),
       moduleMappings: [
         {
@@ -59,7 +59,7 @@ This specification prompt governs all autonomous reasoning, code generation, and
     );
     console.log(
       "\x1b[32m%s\x1b[0m",
-      "✔ Generated baseline manifest: inuo-manifest.json (v00.03.70)",
+      "✔ Generated baseline manifest: inuo-manifest.json (v00.03.72)",
     );
   } else {
     console.log(

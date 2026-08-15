@@ -234,6 +234,26 @@ body {
   color: #f0fdf4;
 }
 
+.log-entry.analyzing-indicator {
+  background: rgba(56, 189, 248, 0.06);
+  border-left: 3px solid var(--accent-cyan);
+  color: var(--accent-cyan);
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: pulseCyan 1.5s infinite ease-in-out;
+}
+
+@keyframes pulseCyan {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .log-entry.system-msg {
   color: var(--accent-amber);
   font-size: 12.5px;

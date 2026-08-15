@@ -1,10 +1,10 @@
 # Agent Directives & Repository Guidelines (`AGENTS.md`)
 
-All AI agents (Antigravity, Gemini, Seed Agents) working on the **INUO** codebase **MUST** follow the architectural rules and standards defined in [`DEV_RULES.md`](file:///d:/repos/INUO/DEV_RULES.md).
+All AI agents (Antigravity, Gemini, Seed Agents) working on the **INUO** codebase **MUST** follow the architectural rules and standards defined in [`tech-specs/dev-rules.md`](file:///d:/repos/INUO/tech-specs/dev-rules.md).
 
 ## Core Rules Reference
 
-All project guidelines, single-definition file constraints (`src/enums/`, `src/types/`, `src/interfaces/`), DRY & SOLID design principles, model isolation, governance, and versioning rules are centrally maintained in [`DEV_RULES.md`](file:///d:/repos/INUO/DEV_RULES.md).
+All project guidelines, single-definition file constraints (`src/enums/`, `src/types/`, `src/interfaces/`), DRY & SOLID design principles, model isolation, governance, and versioning rules are centrally maintained in [`tech-specs/dev-rules.md`](file:///d:/repos/INUO/tech-specs/dev-rules.md).
 
 ## Graphify Workflow
 
@@ -14,9 +14,23 @@ All project guidelines, single-definition file constraints (`src/enums/`, `src/t
 - If Graphify is unavailable, unconfigured, interrupted, or fails, report that briefly and leave the completed task unchanged.
 - All files under `graphify-out/` are generated local artifacts and must remain ignored by Git.
 
+## Git Operations Policy
+
+- AI agents **MUST NOT** execute Git operations (`git add`, `git commit`, `git push`, `git checkout`, `git restore`, `git reset`, etc.) unless explicitly instructed by the user in the prompt.
+- File staging and commits are under explicit human user control.
+
+## Test Execution Policy
+
+- AI agents and automated tools **MUST NOT** run test suites (`npm test`, `npm run test:all`, `node --test`, etc.) unless explicitly specified by the user in the prompt, or when bumping version or executing major refactors.
+
+## Custom Project Scripts Authorization
+
+- All custom scripts located in `scripts/` (`*.js`, `*.sh`) and repository root launchers (`listChildren.sh`, `inou.sh`, `iwc.sh`) are approved project utilities authorized for workspace execution.
+
 ## Improvement Tracking Workflow
 
 - Pending improvements are tracked in `to-improve/`.
 - Completed improvements are tracked in `improved/`.
 - Keep one markdown file per improvement item and keep file names stable.
 - After adding, editing, or moving improvement items, run `npm run improvements:sync` to regenerate `INDEX.md` files.
+

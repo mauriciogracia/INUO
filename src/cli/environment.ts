@@ -5,7 +5,14 @@ import { LogLevelEnum } from "../enums/LogLevelEnum";
 
 export function loadEnvironment(rootDir: string = process.cwd()): Environment {
   const manifestPath = path.join(rootDir, "inuo-manifest.json");
-  const specPath = path.join(rootDir, "INUO_SPEC.md");
+  const techSpec = path.join(rootDir, "tech-specs", "main-specs-goals.md");
+  const docsSpec = path.join(rootDir, "docs", "main-specs-goals.md");
+  const rootSpec = path.join(rootDir, "main-specs-goals.md");
+  const fallbackSpec = path.join(rootDir, "INUO_SPEC.md");
+  let specPath = fallbackSpec;
+  if (fs.existsSync(techSpec)) specPath = techSpec;
+  else if (fs.existsSync(docsSpec)) specPath = docsSpec;
+  else if (fs.existsSync(rootSpec)) specPath = rootSpec;
   const statePath = path.join(rootDir, ".inuo-state.json");
   const configPath = path.join(rootDir, ".inuo-key.json");
   const envFilePath = path.join(rootDir, ".env");
@@ -21,16 +28,14 @@ export function loadEnvironment(rootDir: string = process.cwd()): Environment {
   if (fs.existsSync(envFilePath)) {
     try {
       const envContent = fs.readFileSync(envFilePath, "utf8");
-      if (!geminiApiKey) {
-        const match =
-          envContent.match(/GEMINI_API_KEY\s*=\s*(.+)/) ||
-          envContent.match(/GOOGLE_API_KEY\s*=\s*(.+)/);
-        if (match && match[1]) {
-          geminiApiKey = match[1].trim().replace(/^["']|["']$/g, "");
-        }
+      const match =
+        envContent.match(/GEMINI_API_KEY\s*=\s*(.+)/) ||
+        envContent.match(/GOOGLE_API_KEY\s*=\s*(.+)/);
+      if (match && match[1] && match[1].trim()) {
+        geminiApiKey = match[1].trim().replace(/^["']|["']$/g, "");
       }
       const modelMatch = envContent.match(/GEMINI_MODEL\s*=\s*(.+)/);
-      if (modelMatch && modelMatch[1]) {
+      if (modelMatch && modelMatch[1] && modelMatch[1].trim()) {
         defaultModel = modelMatch[1].trim().replace(/^["']|["']$/g, "");
       }
       const debugMatch = envContent.match(/DEBUG_LEVEL\s*=\s*(.+)/);

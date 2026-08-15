@@ -5,6 +5,22 @@ import { LLMConfigurationInput } from "../interfaces/LLMConfigurationInput";
 import { LLMConfigurationPrompter } from "../interfaces/LLMConfigurationPrompter";
 import { LLMProviderSetup } from "../interfaces/LLMProviderSetup";
 
+const PROVIDER_ALIASES: Record<string, string> = {
+  google: "gemini",
+  gemini: "gemini",
+  gpt: "openai",
+  openai: "openai",
+  claude: "anthropic",
+  anthropic: "anthropic",
+  local: "ollama",
+  ollama: "ollama",
+  groq: "groq",
+  deepseek: "deepseek",
+  mistral: "mistral",
+  openrouter: "openrouter",
+  copilot: "copilot",
+};
+
 const PROVIDER_DEFAULTS: Record<
   string,
   {
@@ -12,31 +28,76 @@ const PROVIDER_DEFAULTS: Record<
     baseUrl?: string;
     credentialEnvironmentVariable?: string;
     documentationUrl: string;
+    supportsPlanMode: boolean;
+    supportsExecuteMode: boolean;
   }
 > = {
   gemini: {
-    model: "gemini-3.6-flash",
+    model: "gemini-flash-latest",
     credentialEnvironmentVariable: "GEMINI_API_KEY",
     documentationUrl: "https://ai.google.dev/gemini-api/docs/api-key",
+    supportsPlanMode: true,
+    supportsExecuteMode: true,
   },
   openai: {
-    model: "gpt-4o",
+    model: "gpt-4o-mini",
+    baseUrl: "https://api.openai.com/v1",
     credentialEnvironmentVariable: "OPENAI_API_KEY",
     documentationUrl: "https://platform.openai.com/docs/quickstart",
+    supportsPlanMode: true,
+    supportsExecuteMode: true,
   },
   anthropic: {
-    model: "claude-sonnet-4-5",
+    model: "claude-3-5-sonnet-20241022",
     credentialEnvironmentVariable: "ANTHROPIC_API_KEY",
     documentationUrl: "https://docs.anthropic.com/en/api/getting-started",
+    supportsPlanMode: true,
+    supportsExecuteMode: true,
+  },
+  groq: {
+    model: "llama-3.3-70b-versatile",
+    baseUrl: "https://api.groq.com/openai/v1",
+    credentialEnvironmentVariable: "GROQ_API_KEY",
+    documentationUrl: "https://console.groq.com/docs/quickstart",
+    supportsPlanMode: true,
+    supportsExecuteMode: true,
+  },
+  deepseek: {
+    model: "deepseek-chat",
+    baseUrl: "https://api.deepseek.com/v1",
+    credentialEnvironmentVariable: "DEEPSEEK_API_KEY",
+    documentationUrl: "https://platform.deepseek.com/docs",
+    supportsPlanMode: true,
+    supportsExecuteMode: false,
+  },
+  mistral: {
+    model: "mistral-large-latest",
+    baseUrl: "https://api.mistral.ai/v1",
+    credentialEnvironmentVariable: "MISTRAL_API_KEY",
+    documentationUrl: "https://docs.mistral.ai/getting-started/quickstart/",
+    supportsPlanMode: true,
+    supportsExecuteMode: true,
+  },
+  openrouter: {
+    model: "google/gemini-2.0-flash-exp:free",
+    baseUrl: "https://openrouter.ai/api/v1",
+    credentialEnvironmentVariable: "OPENROUTER_API_KEY",
+    documentationUrl: "https://openrouter.ai/docs",
+    supportsPlanMode: true,
+    supportsExecuteMode: false,
   },
   copilot: {
     model: "gpt-4.1",
     documentationUrl: "https://code.visualstudio.com/docs/copilot/overview",
+    supportsPlanMode: true,
+    supportsExecuteMode: false,
   },
   ollama: {
     model: "llama3.2",
     baseUrl: "http://localhost:11434",
     documentationUrl: "https://ollama.com/download",
+    supportsPlanMode: true,
+    supportsExecuteMode: false,
   },
 };
 
@@ -59,30 +120,32 @@ function isValidConfigurationName(value: string): boolean {
 }
 
 function printCredentialGuidance(configuration: LLMConfiguration): void {
-  const defaults = PROVIDER_DEFAULTS[configuration.engineName.toLowerCase()];
-  console.log(`Configuration "${configuration.configurationName}" saved.`);
-  console.log("No API key or secret was requested or stored.");
+  const canonicalEngine = PROVIDER_ALIASES[configuration.engineName.toLowerCase()] || configuration.engineName.toLowerCase();
+  const defaults = PROVIDER_DEFAULTS[canonicalEngine];
+  console.log(`\x1b[32m✔ [Autoconfig]\x1b[0m Configuration "${configuration.configurationName}" saved with model "${configuration.model}".`);
+  console.log("No API key or secret was requested or stored in public state.");
   if (configuration.credentialEnvironmentVariable) {
     console.log(
-      `Set ${configuration.credentialEnvironmentVariable} in the environment before using this provider.`,
+      `Ensure ${configuration.credentialEnvironmentVariable} is set in your local .env or environment.`,
     );
   } else {
     console.log(
-      "This engine profile does not require a credential environment variable.",
+      "This engine profile (local / zero-auth) does not require a credential environment variable.",
     );
   }
   if (defaults?.documentationUrl) {
-    console.log(`Provider setup: ${defaults.documentationUrl}`);
+    console.log(`Provider setup guide: ${defaults.documentationUrl}`);
   }
 }
 
 export function getLLMProviderSetup(engineNameInput: string): LLMProviderSetup {
-  const engineName = engineNameInput.trim().toLowerCase();
+  const raw = engineNameInput.trim().toLowerCase();
+  const engineName = PROVIDER_ALIASES[raw] || raw;
   const defaults = PROVIDER_DEFAULTS[engineName];
   return {
     engineName,
     defaultConfigurationName: `${engineName}-default`,
-    defaultModel: defaults?.model || "",
+    defaultModel: defaults?.model || "custom-model",
     defaultBaseUrl: defaults?.baseUrl,
     credentialEnvironmentVariable: defaults?.credentialEnvironmentVariable,
     documentationUrl: defaults?.documentationUrl || undefined,
@@ -101,7 +164,8 @@ export function saveLLMConfiguration(
   rootDir: string = process.cwd(),
 ): LLMConfiguration {
   const configurationName = normalizeName(input.configurationName);
-  const engineName = input.engineName.trim().toLowerCase();
+  const rawEngine = input.engineName.trim().toLowerCase();
+  const engineName = PROVIDER_ALIASES[rawEngine] || rawEngine;
   const model = input.model.trim();
   const baseUrl = input.baseUrl?.trim();
 
@@ -133,10 +197,10 @@ export function saveLLMConfiguration(
     configurationName,
     engineName,
     model,
-    baseUrl: baseUrl || undefined,
+    baseUrl: baseUrl || setup.defaultBaseUrl || undefined,
     credentialEnvironmentVariable: setup.credentialEnvironmentVariable,
-    supportsPlanMode: input.supportsPlanMode,
-    supportsExecuteMode: input.supportsExecuteMode,
+    supportsPlanMode: input.supportsPlanMode !== false,
+    supportsExecuteMode: input.supportsExecuteMode === true,
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -171,13 +235,16 @@ async function addConfiguration(
   rootDir: string,
   prompter?: LLMConfigurationPrompter,
 ): Promise<void> {
-  const engineName = engineNameInput.trim().toLowerCase();
-  if (!engineName) {
-    console.log("Usage: llm add <engineName>");
+  const rawEngine = engineNameInput.trim().toLowerCase();
+  if (!rawEngine) {
+    console.log("Usage: llm add <engineName> [--name <name>] [--model <model>]");
+    console.log("Supported recognized engines: gemini, openai, anthropic, ollama, groq, deepseek, mistral, openrouter");
     return;
   }
 
+  const engineName = PROVIDER_ALIASES[rawEngine] || rawEngine;
   const setup = getLLMProviderSetup(engineName);
+  const defaults = PROVIDER_DEFAULTS[engineName];
 
   let configurationName = getFlag(args, "--name");
   let model = getFlag(args, "--model");
@@ -185,43 +252,37 @@ async function addConfiguration(
   let planMode = getFlag(args, "--plan");
   let executeMode = getFlag(args, "--execute");
 
-  if (!prompter && !configurationName) {
-    console.log(
-      "Interactive prompting is unavailable in this client. Use: llm add <engineName> --name <configurationName> --model <model> [--base-url <url>] [--plan yes|no] [--execute yes|no]",
+  // If interactive prompter is available and no explicit flags passed, prompt with auto-filled defaults
+  if (prompter && !configurationName && !model) {
+    configurationName = await prompter.ask(
+      "Unique configuration name",
+      setup.defaultConfigurationName,
     );
-    return;
+    model = await prompter.ask("Model name", setup.defaultModel);
+    baseUrl = await prompter.ask(
+      "Base URL (leave blank for provider default)",
+      setup.defaultBaseUrl || "",
+    );
+    planMode = await prompter.ask("Supports plan mode? (yes/no)", defaults?.supportsPlanMode ? "yes" : "no");
+    executeMode = await prompter.ask("Supports execute/tool mode? (yes/no)", defaults?.supportsExecuteMode ? "yes" : "no");
   }
 
-  if (prompter) {
-    configurationName =
-      configurationName ||
-      (await prompter.ask(
-        "Unique configuration name",
-        setup.defaultConfigurationName,
-      ));
-    model = model || (await prompter.ask("Model name", setup.defaultModel));
-    baseUrl =
-      baseUrl ||
-      (await prompter.ask(
-        "Base URL (leave blank for provider default)",
-        setup.defaultBaseUrl || "",
-      ));
-    planMode =
-      planMode || (await prompter.ask("Supports plan mode? (yes/no)", "yes"));
-    executeMode =
-      executeMode ||
-      (await prompter.ask("Supports execute/tool mode? (yes/no)", "no"));
-  }
+  // If non-interactive and no flags, autoconfigure with provider preset defaults!
+  const finalName = configurationName || setup.defaultConfigurationName;
+  const finalModel = model || setup.defaultModel;
+  const finalBaseUrl = baseUrl || setup.defaultBaseUrl;
+  const finalPlan = planMode !== undefined ? parseBoolean(planMode, true) : (defaults?.supportsPlanMode ?? true);
+  const finalExecute = executeMode !== undefined ? parseBoolean(executeMode, false) : (defaults?.supportsExecuteMode ?? false);
 
   try {
     const configuration = saveLLMConfiguration(
       {
-        configurationName: configurationName || setup.defaultConfigurationName,
+        configurationName: finalName,
         engineName,
-        model: model || setup.defaultModel,
-        baseUrl: baseUrl || setup.defaultBaseUrl,
-        supportsPlanMode: parseBoolean(planMode, true),
-        supportsExecuteMode: parseBoolean(executeMode, false),
+        model: finalModel,
+        baseUrl: finalBaseUrl,
+        supportsPlanMode: finalPlan,
+        supportsExecuteMode: finalExecute,
       },
       rootDir,
     );
@@ -242,7 +303,7 @@ function removeConfiguration(configurationName: string, rootDir: string): void {
 function listConfigurations(rootDir: string): void {
   const configurations = getLLMConfigurations(rootDir);
   if (configurations.length === 0) {
-    console.log("No LLM configurations saved. Use: llm add <engineName>");
+    console.log("No LLM configurations saved. Use: llm add <engineName> (e.g. llm add gemini, llm add openai, llm add ollama)");
     return;
   }
 
@@ -258,7 +319,7 @@ function statusConfigurations(rootDir: string): void {
   const configurations = getLLMConfigurations(rootDir);
   if (configurations.length === 0) {
     console.log("LLM status: no configurations saved.");
-    console.log("Use: llm add <engineName>");
+    console.log("Use: llm add <engineName> (e.g. llm add gemini, llm add openai, llm add anthropic, llm add ollama)");
     return;
   }
 

@@ -5,6 +5,13 @@ import { writeOutput } from "./outputRouter";
 import { OutputChannelEnum } from "../enums/OutputChannelEnum";
 import { getPreference, buildPreferencePromptBlock } from "./preferenceEngine";
 import { addSessionTokens } from "./usageEngine";
+import { getI18n } from "../i18n";
+import { formatTechnicalError } from "./errorEngine";
+import {
+  getActiveTierModel,
+  handleFreeTierExhaustion,
+  recordModelExhaustion,
+} from "./costGovernanceEngine";
 export interface ParsedIntentResult {
   type:
     | "NEED"
@@ -14,9 +21,12 @@ export interface ParsedIntentResult {
     | "CORRECTION"
     | "QUERY"
     | "EXIT"
+    | "EVOLVE"
+    | "LEARN"
     | "COMMAND_SEQUENCE";
   verb?: string;
   object?: string;
+  goalText?: string;
   targetIdOrCode?: string;
   answerText?: string;
   correctionTopic?: string;
@@ -48,22 +58,16 @@ export async function processNaturalLanguageIntent(
 ): Promise<ParsedIntentResult | null> {
   const env = loadEnvironment(rootDir);
 
-  if (!env.geminiApiKey) {
-    console.log(
-      "\x1b[33m%s\x1b[0m",
-      "[Gemini AI] Google Gemini API Key not detected.",
-    );
-    console.log(
-      "To connect your Google Gemini credentials, set GEMINI_API_KEY in your environment or type:",
-    );
-    console.log("\x1b[1mkey <YOUR_GEMINI_API_KEY>\x1b[0m\n");
-    return null;
-  }
-
   const paths = getProjectPaths(rootDir);
   const state = loadState(paths.statePath);
   const modeConfig = state.operatingMode;
   const lang = modeConfig?.detectedLanguage || "en";
+  const dict = getI18n(lang);
+
+  if (!env.geminiApiKey) {
+    writeOutput(OutputChannelEnum.USER_REPLY, dict.errors.apiKeyMissing);
+    return null;
+  }
   const isSuccinct = modeConfig?.isSuccinctMode !== false;
   const debugLevel = env.debugLevel;
   const userId = state.activeUser?.userId ?? "user_local";
@@ -130,6 +134,8 @@ Supported CLI Commands:
 - "mode succinct [on|off]"
 - "mode debug <0|1|2|3>"
 - "auth signin / signout"
+- "learn <goal>" / "learn from chat history all" / "learn @<file>"
+- "evolve <goal>"
 - "gc" (Open Google Chrome Web UI)
 - "exit / quit / q"
 
@@ -141,14 +147,17 @@ Intent Types:
 - "ANSWER": Providing details or answering a doubt for a specific step/code
 - "CORRECTION": User is correcting a misunderstanding or giving a rule directive
 - "QUERY": General question about INUO or status
+- "EVOLVE": User requests INUO to self-evolve, modify its codebase, create types, or add new command capabilities (e.g. "modificate a ti misma para agregar auth", "evolve add oauth2 support", "agrega el comando auth para linkedin"). Set "type": "EVOLVE", "goalText": "<feature description>".
+- "LEARN": User asks INUO to learn a skill, integrate an external API, or learn from chat history (e.g. "aprende a postear en tiktok", "learn how to post to linkedin", "learn from chat history all"). Set "type": "LEARN", "goalText": "<skill description>".
 - "EXIT": User wants to exit, say goodbye, or terminate session in any language
 - "COMMAND_SEQUENCE": For ANY complex, multi-step, or unsupported input, convert the user prompt into a sequence of real supported CLI commands in "commandSequence" array.
 
 Return ONLY a raw JSON object with NO markdown formatting matching this structure:
 {
-  "type": "NEED" | "OFFER" | "DETAIL_PLAN" | "ANSWER" | "CORRECTION" | "QUERY" | "EXIT" | "COMMAND_SEQUENCE",
+  "type": "NEED" | "OFFER" | "DETAIL_PLAN" | "ANSWER" | "CORRECTION" | "QUERY" | "EVOLVE" | "LEARN" | "EXIT" | "COMMAND_SEQUENCE",
   "verb": "PrimaryVerb",
   "object": "PrimaryObject",
+  "goalText": "Goal description for EVOLVE or LEARN",
   "targetIdOrCode": "Optional target step code or ID if answering or detailing existing step",
   "answerText": "Answer details if answering a step",
   "correctionTopic": "Topic area if correcting",
@@ -168,47 +177,159 @@ Return ONLY a raw JSON object with NO markdown formatting matching this structur
   ]
 }`;
 
-    const response = await ai.models.generateContent({
-      model: env.defaultModel,
-      contents: prompt,
-    });
+    while (true) {
+      const tierResolution = getActiveTierModel(rootDir);
+      if (tierResolution.requiresConsent) {
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          dict.costGovernance.paidConfirmationRequired,
+        );
+        return null;
+      }
 
-    const text = response.text?.trim() || "";
-    const meta = (response as any).usageMetadata;
-    if (meta) {
-      addSessionTokens(
-        meta.promptTokenCount ?? 0,
-        meta.candidatesTokenCount ?? 0,
-        env.defaultModel,
-      );
+      const targetModel = tierResolution.model || env.defaultModel;
+
+      writeOutput(OutputChannelEnum.THINKING, dict.intentParser.analyzing, debugLevel);
+
+      try {
+        const response = await ai.models.generateContent({
+          model: targetModel,
+          contents: prompt,
+        });
+
+        const text = response.text?.trim() || "";
+        const meta = (response as any).usageMetadata;
+        if (meta) {
+          addSessionTokens(
+            meta.promptTokenCount ?? 0,
+            meta.candidatesTokenCount ?? 0,
+            targetModel,
+          );
+        }
+        const cleanJson = text
+          .replace(/```json/g, "")
+          .replace(/```/g, "")
+          .trim();
+        const result = JSON.parse(cleanJson) as ParsedIntentResult;
+
+        // Route Thinking Details to stderr (Descriptor 2)
+        if (result.thinkingDetails) {
+          writeOutput(
+            OutputChannelEnum.THINKING,
+            result.thinkingDetails,
+            debugLevel,
+          );
+        }
+
+        // Route Debug Details to stderr (Descriptor 2)
+        if (result.debugDetails) {
+          writeOutput(OutputChannelEnum.DEBUG, result.debugDetails, debugLevel);
+        }
+
+        return result;
+      } catch (err: any) {
+        const errMsg = ((err as Error)?.message || String(err)).toLowerCase();
+        const status = (err as any)?.status || (err as any)?.statusCode;
+        const isQuotaExhausted =
+          status === 429 ||
+          status === 404 ||
+          status === 503 ||
+          errMsg.includes("429") ||
+          errMsg.includes("resource_exhausted") ||
+          errMsg.includes("quota") ||
+          errMsg.includes("not available");
+
+        if (isQuotaExhausted && !tierResolution.isPaid) {
+          const cascadeResult = recordModelExhaustion(targetModel, lang, rootDir);
+          if (!cascadeResult.allExhausted && cascadeResult.cascadedModel) {
+            // Transparently cascade to next available free candidate model
+            continue;
+          }
+          // All free models exhausted: prompt rendered, break loop to protect tokens
+          return null;
+        }
+
+        writeOutput(
+          OutputChannelEnum.DEBUG,
+          `[Gemini AI Error] ${err.message}`,
+          debugLevel,
+        );
+        const friendlyError = formatTechnicalError(err, lang);
+        writeOutput(OutputChannelEnum.USER_REPLY, friendlyError);
+        return null;
+      }
     }
-    const cleanJson = text
-      .replace(/```json/g, "")
-      .replace(/```/g, "")
-      .trim();
-    const result = JSON.parse(cleanJson) as ParsedIntentResult;
-
-    // Route Thinking Details to stderr (Descriptor 2)
-    if (result.thinkingDetails) {
-      writeOutput(
-        OutputChannelEnum.THINKING,
-        result.thinkingDetails,
-        debugLevel,
-      );
-    }
-
-    // Route Debug Details to stderr (Descriptor 2)
-    if (result.debugDetails) {
-      writeOutput(OutputChannelEnum.DEBUG, result.debugDetails, debugLevel);
-    }
-
-    return result;
   } catch (err: any) {
     writeOutput(
       OutputChannelEnum.DEBUG,
-      `[Gemini AI Error] ${err.message}`,
+      `[Gemini AI Initialization Error] ${err.message}`,
       debugLevel,
     );
+    const friendlyError = formatTechnicalError(err, lang);
+    writeOutput(OutputChannelEnum.USER_REPLY, friendlyError);
     return null;
   }
 }
+
+/**
+ * Generic AI execution function utilizing the cost-governance cascading free-tier waterfall.
+ */
+export async function executeAiCall(
+  prompt: string,
+  rootDir: string = process.cwd(),
+): Promise<string> {
+  const env = loadEnvironment(rootDir);
+  if (!env.geminiApiKey) {
+    throw new Error("Gemini API key is missing. Run 'inuo setup' to configure credentials.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
+
+  while (true) {
+    const tierResolution = getActiveTierModel(rootDir);
+    if (tierResolution.requiresConsent) {
+      throw new Error("All free tier models are exhausted. Explicit consent for paid model is required via 'tier consent yes'.");
+    }
+
+    const targetModel = tierResolution.model || env.defaultModel;
+
+    try {
+      const response = await ai.models.generateContent({
+        model: targetModel,
+        contents: prompt,
+      });
+
+      const text = response.text?.trim() || "";
+      const meta = (response as any).usageMetadata;
+      if (meta) {
+        addSessionTokens(
+          meta.promptTokenCount ?? 0,
+          meta.candidatesTokenCount ?? 0,
+          targetModel,
+        );
+      }
+      return text;
+    } catch (err: any) {
+      const errMsg = ((err as Error)?.message || String(err)).toLowerCase();
+      const status = (err as any)?.status || (err as any)?.statusCode;
+      const isQuotaExhausted =
+        status === 429 ||
+        status === 404 ||
+        status === 503 ||
+        errMsg.includes("429") ||
+        errMsg.includes("resource_exhausted") ||
+        errMsg.includes("quota") ||
+        errMsg.includes("not available");
+
+      if (isQuotaExhausted && !tierResolution.isPaid) {
+        const cascadeResult = recordModelExhaustion(targetModel, "en", rootDir);
+        if (!cascadeResult.allExhausted && cascadeResult.cascadedModel) {
+          continue;
+        }
+        throw new Error("All free models in pool exhausted. Quota limit reached.");
+      }
+      throw err;
+    }
+  }
+}
+

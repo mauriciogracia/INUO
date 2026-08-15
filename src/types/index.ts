@@ -25,3 +25,4 @@ export * from "./QuestionOptionType";
 export * from "./ResponseLength";
 export * from "./ResponseFormat";
 export * from "./SocialNetworkName";
+export * from "./TierFallbackMode";

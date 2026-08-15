@@ -1,0 +1,47 @@
+[
+  {
+    "id": "train_001",
+    "category": "intent_parsing",
+    "prompt": "I want to donate fresh water to flood victims",
+    "expectedNeed": null,
+    "expectedOffer": {
+      "verb": "Donate",
+      "object": "FreshWater"
+    },
+    "createdAt": "2026-08-15T00:00:00.000Z"
+  },
+  {
+    "id": "train_002",
+    "category": "intent_parsing",
+    "prompt": "We need a geotechnical survey for foundation building",
+    "expectedNeed": {
+      "verb": "Consult",
+      "object": "Geotechnical survey"
+    },
+    "expectedOffer": null,
+    "createdAt": "2026-08-15T00:00:00.000Z"
+  },
+  {
+    "id": "train_1786769001782_613",
+    "category": "skill_learning",
+    "prompt": "existe ?",
+    "expectedNeed": {
+      "verb": "Verify",
+      "object": "ResourceExistence"
+    },
+    "expectedOffer": null,
+    "skillRecipe": {
+      "skillName": "ResourceExistenceVerificationSkill",
+      "atomicFormula": "NEED = (Verify) + (ResourceExistence)",
+      "samplePayload": {
+        "identifier": "https://example.com/api/v1/resource/123",
+        "type": "URL",
+        "options": {
+          "followRedirects": true,
+          "timeoutMs": 5000
+        }
+      }
+    },
+    "createdAt": "2026-08-15T04:43:21.782Z"
+  }
+]

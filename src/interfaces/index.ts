@@ -59,3 +59,8 @@ export * from "./LLMConfigurationPrompter";
 export * from "./LLMProviderSetup";
 export * from "./WorkflowNode";
 export * from "./SocialNetworkConfiguration";
+export * from "./CostGovernanceConfig";
+export * from "./SkillDefinition";
+export * from "./TrainingPair";
+export * from "./EvolutionSnapshot";
+export * from "./CommandAlias";

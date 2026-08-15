@@ -16,7 +16,7 @@ test("Sync Engine Automated Detection & Verification Unit Tests", async (t) => {
   await t.test("detects when manifest and spec are synchronized", () => {
     const result = checkAndApplySyncProtocol(tmpDir);
     assert.equal(result.status, "Synced");
-    assert.equal(result.currentManifestVersion, "00.03.70");
+    assert.equal(result.currentManifestVersion, "00.03.72");
   });
 
   await t.test(

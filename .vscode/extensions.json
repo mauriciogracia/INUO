@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "tomoki1207.pdf",
+    "shd101wyy.markdown-preview-enhanced",
+    "qwtel.sqlite-viewer",
+    "pkief.material-icon-theme",
+    "donjayamanne.githistory",
+    "workingpayload.token-alerts",
+    "samuelcharpentier.remove-non-ascii-chars"
+  ]
+}

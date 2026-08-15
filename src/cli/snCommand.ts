@@ -57,7 +57,7 @@ export function getSocialNetworkConfigurations(
   return loadState(paths.statePath).socialNetworkConfigurations || [];
 }
 
-export function runSNCommand(
+export function runSocialMediaCommand(
   args: string[],
   rootDir: string = process.cwd(),
 ): void {
@@ -73,7 +73,7 @@ export function runSNCommand(
 
     if (!networkInput || !configurationNameInput) {
       console.log(
-        "Usage: sn add <network> <configurationName> [--account <handle>] [--enabled yes|no]",
+        "Usage: socialmedia add <network> <configurationName> [--account <handle>] [--enabled yes|no]",
       );
       printSupportedNetworks();
       return;
@@ -81,7 +81,7 @@ export function runSNCommand(
 
     const network = normalizeNetwork(networkInput);
     if (!network) {
-      console.log(`Unsupported network \"${networkInput}\".`);
+      console.log(`Unsupported network "${networkInput}".`);
       printSupportedNetworks();
       return;
     }
@@ -94,7 +94,7 @@ export function runSNCommand(
           configurationName.toLowerCase(),
       )
     ) {
-      console.log(`SN configuration \"${configurationName}\" already exists.`);
+      console.log(`Social media configuration "${configurationName}" already exists.`);
       return;
     }
 
@@ -115,7 +115,7 @@ export function runSNCommand(
     state.socialNetworkConfigurations.push(configuration);
     saveState(paths.statePath, state);
     console.log(
-      `Saved SN configuration \"${configuration.configurationName}\" for ${configuration.network}.`,
+      `Saved social media configuration "${configuration.configurationName}" for ${configuration.network}.`,
     );
     return;
   }
@@ -124,13 +124,13 @@ export function runSNCommand(
     const items = state.socialNetworkConfigurations;
     if (items.length === 0) {
       console.log(
-        "No social network configurations saved. Use: sn add <network> <configurationName>",
+        "No social media configurations saved. Use: socialmedia add <network> <configurationName>",
       );
       printSupportedNetworks();
       return;
     }
 
-    console.log("=== Social Network Configurations ===");
+    console.log("=== Social Media Configurations ===");
     for (const item of items) {
       const handle = item.accountHandle || "n/a";
       console.log(
@@ -143,7 +143,7 @@ export function runSNCommand(
   if (subcommand === "remove") {
     const configurationName = args[1];
     if (!configurationName) {
-      console.log("Usage: sn remove <configurationName>");
+      console.log("Usage: socialmedia remove <configurationName>");
       return;
     }
 
@@ -154,13 +154,13 @@ export function runSNCommand(
     );
 
     if (index < 0) {
-      console.log(`SN configuration \"${configurationName}\" not found.`);
+      console.log(`Social media configuration "${configurationName}" not found.`);
       return;
     }
 
     state.socialNetworkConfigurations.splice(index, 1);
     saveState(paths.statePath, state);
-    console.log(`Removed SN configuration \"${configurationName}\".`);
+    console.log(`Removed social media configuration "${configurationName}".`);
     return;
   }
 
@@ -168,7 +168,7 @@ export function runSNCommand(
     const configurationName = args[1];
     if (!configurationName) {
       console.log(
-        "Usage: sn update <configurationName> [--network <network>] [--account <handle>] [--enabled yes|no]",
+        "Usage: socialmedia update <configurationName> [--network <network>] [--account <handle>] [--enabled yes|no]",
       );
       return;
     }
@@ -179,7 +179,7 @@ export function runSNCommand(
     );
 
     if (!current) {
-      console.log(`SN configuration \"${configurationName}\" not found.`);
+      console.log(`Social media configuration "${configurationName}" not found.`);
       return;
     }
 
@@ -187,7 +187,7 @@ export function runSNCommand(
     if (networkInput) {
       const normalizedNetwork = normalizeNetwork(networkInput);
       if (!normalizedNetwork) {
-        console.log(`Unsupported network \"${networkInput}\".`);
+        console.log(`Unsupported network "${networkInput}".`);
         printSupportedNetworks();
         return;
       }
@@ -208,12 +208,15 @@ export function runSNCommand(
 
     current.updatedAt = new Date().toISOString();
     saveState(paths.statePath, state);
-    console.log(`Updated SN configuration \"${current.configurationName}\".`);
+    console.log(`Updated social media configuration "${current.configurationName}".`);
     return;
   }
 
   console.log(
-    "Unknown sn command. Supported: sn add <network> <configurationName>, sn list, sn update <configurationName>, sn remove <configurationName>",
+    "Unknown socialmedia command. Supported: socialmedia add <network> <configurationName>, socialmedia list, socialmedia update <configurationName>, socialmedia remove <configurationName> (alias: sn)",
   );
   printSupportedNetworks();
 }
+
+// Backward-compatible alias
+export const runSNCommand = runSocialMediaCommand;

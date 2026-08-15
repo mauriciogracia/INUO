@@ -15,6 +15,7 @@ import {
   getLLMProviderSetup,
   saveLLMConfiguration,
 } from "./llmCommand";
+import { probeAndConfigureModels, maskApiKey } from "./setupCommand";
 
 export interface WebServerOptions {
   port?: number;
@@ -159,6 +160,26 @@ export function startWebServer(options: WebServerOptions = {}): http.Server {
       res.json({ status: "removed", configurationName });
     },
   );
+
+  app.post("/api/setup/llm", async (req: Request, res: Response) => {
+    try {
+      const apiKey = req.body?.apiKey;
+      if (!apiKey || typeof apiKey !== "string") {
+        res.status(400).json({ error: "Missing or invalid 'apiKey' field in request body." });
+        return;
+      }
+      const result = await probeAndConfigureModels(apiKey, rootDir);
+      res.json({
+        success: result.success,
+        workingFree: result.workingFree,
+        workingPaid: result.workingPaid,
+        maskedKey: maskApiKey(apiKey),
+        message: result.message,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to configure LLM setup." });
+    }
+  });
 
   // Command Execution POST Endpoint
   app.post("/api/command", async (req: Request, res: Response) => {

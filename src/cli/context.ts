@@ -13,10 +13,19 @@ import { Principle } from "../interfaces/Principle";
 import { UserRole } from "../types/UserRole";
 
 export function getProjectPaths(rootDir: string = process.cwd()) {
+  const techSpec = path.join(rootDir, "tech-specs", "main-specs-goals.md");
+  const docsSpec = path.join(rootDir, "docs", "main-specs-goals.md");
+  const rootSpec = path.join(rootDir, "main-specs-goals.md");
+  const fallbackSpec = path.join(rootDir, "INUO_SPEC.md");
+  let specPath = fallbackSpec;
+  if (fs.existsSync(techSpec)) specPath = techSpec;
+  else if (fs.existsSync(docsSpec)) specPath = docsSpec;
+  else if (fs.existsSync(rootSpec)) specPath = rootSpec;
+
   return {
     rootDir,
     manifestPath: path.join(rootDir, "inuo-manifest.json"),
-    specPath: path.join(rootDir, "INUO_SPEC.md"),
+    specPath,
     statePath: path.join(rootDir, ".inuo-state.json"),
   };
 }
@@ -54,6 +63,8 @@ import { UserPreferenceProfile } from "../interfaces/UserPreferenceProfile";
 import { LLMConfiguration } from "../interfaces/LLMConfiguration";
 import { WorkflowNode } from "../interfaces/WorkflowNode";
 import { SocialNetworkConfiguration } from "../interfaces/SocialNetworkConfiguration";
+import { CostGovernanceConfig } from "../interfaces/CostGovernanceConfig";
+import { CommandAlias } from "../interfaces/CommandAlias";
 
 export interface StateData {
   needs: Need[];
@@ -85,6 +96,8 @@ export interface StateData {
   llmConfigurations?: LLMConfiguration[];
   workflowNodes?: WorkflowNode[];
   socialNetworkConfigurations?: SocialNetworkConfiguration[];
+  costGovernance?: CostGovernanceConfig;
+  aliases?: CommandAlias[];
 }
 
 export const BASELINE_ENGINES: EngineConfig[] = [
@@ -265,6 +278,7 @@ export function loadState(statePath: string): StateData {
       llmConfigurations: [],
       workflowNodes: [],
       socialNetworkConfigurations: [],
+      costGovernance: undefined,
     };
   }
   try {
@@ -316,6 +330,8 @@ export function loadState(statePath: string): StateData {
       llmConfigurations: parsed.llmConfigurations || [],
       workflowNodes: parsed.workflowNodes || [],
       socialNetworkConfigurations: parsed.socialNetworkConfigurations || [],
+      costGovernance: parsed.costGovernance,
+      aliases: parsed.aliases || [],
     };
   } catch {
     return {
@@ -352,6 +368,8 @@ export function loadState(statePath: string): StateData {
       llmConfigurations: [],
       workflowNodes: [],
       socialNetworkConfigurations: [],
+      costGovernance: undefined,
+      aliases: [],
     };
   }
 }

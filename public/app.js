@@ -41,7 +41,25 @@ document.addEventListener("DOMContentLoaded", () => {
     let knownServerStartTime = null;
     let uiStrings = getStrings("es");
     let thinkingIndicator = null;
+    let analyzingIndicator = null;
     let activeLLMSetup = null;
+    function showAnalyzing() {
+        if (!analyzingIndicator) {
+            analyzingIndicator = document.createElement("div");
+            analyzingIndicator.className = "log-entry analyzing-indicator";
+            if (activeTab !== "conversation")
+                analyzingIndicator.style.display = "none";
+            analyzingIndicator.innerHTML = `<span class="analyzing-spinner">⏳</span> <span class="analyzing-text">${uiStrings.analyzing}</span>`;
+            logViewport.appendChild(analyzingIndicator);
+            logViewport.scrollTop = logViewport.scrollHeight;
+        }
+    }
+    function hideAnalyzing() {
+        if (analyzingIndicator) {
+            analyzingIndicator.remove();
+            analyzingIndicator = null;
+        }
+    }
     // 1. Tab Switching Handler
     tabBtns.forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -54,6 +72,10 @@ document.addEventListener("DOMContentLoaded", () => {
     function filterLogs() {
         const entries = logViewport.querySelectorAll(".log-entry");
         entries.forEach((entry) => {
+            if (entry.classList.contains("analyzing-indicator")) {
+                entry.style.display = activeTab === "conversation" ? "flex" : "none";
+                return;
+            }
             if (activeTab === "conversation") {
                 entry.style.display =
                     entry.classList.contains("thinking-msg") ||
@@ -182,6 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         else {
             entry.classList.add("reply-msg");
+            hideAnalyzing();
             if (thinkingIndicator) {
                 thinkingIndicator.remove();
                 thinkingIndicator = null;
@@ -203,6 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
         logViewport.scrollTop = logViewport.scrollHeight;
     }
     function appendErrorWithRetry(friendlyMessage, command) {
+        hideAnalyzing();
         const entry = document.createElement("div");
         entry.className = "log-entry error-msg";
         if (activeTab !== "conversation")
@@ -219,6 +243,7 @@ document.addEventListener("DOMContentLoaded", () => {
         logViewport.scrollTop = logViewport.scrollHeight;
     }
     function openLLMConfigurationDialog(setup) {
+        hideAnalyzing();
         activeLLMSetup = setup;
         llmEngineName.textContent = setup.engineName;
         llmConfigurationName.value = setup.defaultConfigurationName;
@@ -255,6 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
         commandInput.focus();
     }
     async function sendCommand(command) {
+        showAnalyzing();
         try {
             const res = await fetch("/api/command", {
                 method: "POST",
@@ -263,6 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             const body = (await res.json().catch(() => ({})));
             if (!res.ok) {
+                hideAnalyzing();
                 appendLog("DEBUG", `[Command Error] HTTP ${res.status} — ${body.error ?? "Unknown"}`);
                 appendErrorWithRetry(uiStrings.errorServer, command);
                 return;
@@ -273,6 +300,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
         catch (err) {
+            hideAnalyzing();
             appendLog("DEBUG", `[Network Error] Couldn't reach iNoU: ${err.message}`);
             appendErrorWithRetry(uiStrings.errorNetwork, command);
         }

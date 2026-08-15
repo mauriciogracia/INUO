@@ -1,6 +1,6 @@
 # INUO Core Domain Models & Entities
 
-This directory contains the canonical data models and entities identified from the **INUO Global Specification** (`INUO_BASE.pdf` / `tocs/base_00.specs.md`), structured according to the single-definition per file rule in [`DEV_RULES.md`](file:///d:/repos/INUO/DEV_RULES.md).
+This directory contains the canonical data models and entities identified from the **INUO Global Specification** (`INUO_BASE.pdf` / `tocs/base_00.specs.md`), structured according to the single-definition per file rule in [`dev-rules.md`](file:///d:/repos/INUO/dev-rules.md).
 
 ## Overview of Single-Definition Files
 

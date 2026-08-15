@@ -38,4 +38,16 @@ test('I18N Localization Engine & Dictionary Unit Tests', async (t) => {
     assert.equal(dict.shellBanner.title, 'Shell Interativo do INUO');
     assert.match(dict.farewell, /Até logo!/);
   });
+
+  await t.test('contains all required technical error strings across all languages', () => {
+    const langs = ['es', 'en', 'de', 'fr', 'pt'];
+    for (const lang of langs) {
+      const dict = getI18n(lang);
+      assert.ok(dict.errors.tokenQuotaReached, `Missing tokenQuotaReached in ${lang}`);
+      assert.ok(dict.errors.networkError, `Missing networkError in ${lang}`);
+      assert.ok(dict.errors.invalidApiKey, `Missing invalidApiKey in ${lang}`);
+      assert.ok(dict.errors.serviceUnavailable, `Missing serviceUnavailable in ${lang}`);
+      assert.ok(dict.errors.generalTechnicalError, `Missing generalTechnicalError in ${lang}`);
+    }
+  });
 });

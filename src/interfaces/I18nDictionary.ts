@@ -40,5 +40,20 @@ export interface I18nDictionary {
     incoherenceDetected: string;
     accessRevoked: string;
     apiKeyMissing: string;
+    tokenQuotaReached: string;
+    networkError: string;
+    invalidApiKey: string;
+    serviceUnavailable: string;
+    generalTechnicalError: string;
+  };
+  costGovernance: {
+    freeTierExhaustedPrompt: string;
+    allFreeModelsExhaustedPrompt: string;
+    cascadingFreeModel: string;
+    paidModelSelected: string;
+    paidConsentGranted: string;
+    paidConsentRevoked: string;
+    paidConfirmationRequired: string;
+    tierStatusHeader: string;
   };
 }

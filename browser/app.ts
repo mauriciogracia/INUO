@@ -114,7 +114,26 @@ document.addEventListener("DOMContentLoaded", () => {
   let knownServerStartTime: string | null = null;
   let uiStrings: WebUiStrings = getStrings("es");
   let thinkingIndicator: HTMLElement | null = null;
+  let analyzingIndicator: HTMLElement | null = null;
   let activeLLMSetup: LLMProviderSetup | null = null;
+
+  function showAnalyzing(): void {
+    if (!analyzingIndicator) {
+      analyzingIndicator = document.createElement("div");
+      analyzingIndicator.className = "log-entry analyzing-indicator";
+      if (activeTab !== "conversation") analyzingIndicator.style.display = "none";
+      analyzingIndicator.innerHTML = `<span class="analyzing-spinner">⏳</span> <span class="analyzing-text">${uiStrings.analyzing}</span>`;
+      logViewport.appendChild(analyzingIndicator);
+      logViewport.scrollTop = logViewport.scrollHeight;
+    }
+  }
+
+  function hideAnalyzing(): void {
+    if (analyzingIndicator) {
+      analyzingIndicator.remove();
+      analyzingIndicator = null;
+    }
+  }
 
   // 1. Tab Switching Handler
   tabBtns.forEach((btn) => {
@@ -129,6 +148,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function filterLogs(): void {
     const entries = logViewport.querySelectorAll<HTMLElement>(".log-entry");
     entries.forEach((entry) => {
+      if (entry.classList.contains("analyzing-indicator")) {
+        entry.style.display = activeTab === "conversation" ? "flex" : "none";
+        return;
+      }
       if (activeTab === "conversation") {
         entry.style.display =
           entry.classList.contains("thinking-msg") ||
@@ -260,6 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } else {
       entry.classList.add("reply-msg");
+      hideAnalyzing();
       if (thinkingIndicator) {
         thinkingIndicator.remove();
         thinkingIndicator = null;
@@ -286,6 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
     friendlyMessage: string,
     command: string,
   ): void {
+    hideAnalyzing();
     const entry = document.createElement("div");
     entry.className = "log-entry error-msg";
     if (activeTab !== "conversation") entry.style.display = "none";
@@ -302,6 +327,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function openLLMConfigurationDialog(setup: LLMProviderSetup): void {
+    hideAnalyzing();
     activeLLMSetup = setup;
     llmEngineName.textContent = setup.engineName;
     llmConfigurationName.value = setup.defaultConfigurationName;
@@ -341,6 +367,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function sendCommand(command: string): Promise<void> {
+    showAnalyzing();
     try {
       const res = await fetch("/api/command", {
         method: "POST",
@@ -349,6 +376,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       const body = (await res.json().catch(() => ({}))) as CommandResponse;
       if (!res.ok) {
+        hideAnalyzing();
         appendLog(
           "DEBUG",
           `[Command Error] HTTP ${res.status} — ${body.error ?? "Unknown"}`,
@@ -363,6 +391,7 @@ document.addEventListener("DOMContentLoaded", () => {
         openLLMConfigurationDialog(body.uiAction.setup);
       }
     } catch (err) {
+      hideAnalyzing();
       appendLog(
         "DEBUG",
         `[Network Error] Couldn't reach iNoU: ${(err as Error).message}`,
