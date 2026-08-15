@@ -10,7 +10,17 @@
 
 ## 1. Architectural Blueprint: Hybrid L1 RAM + L2 SQLite Engine
 
+### 1.1 Structural Taxonomy Equivalence
+Throughout INUO specifications and implementation runtimes, relational and document terminology map interchangeably:
+* **`Table` $\equiv$ `Collection`**: The logical container/table of records (e.g. `projects`, `workspaces`, `tasks`, `memories`, `preferences`, `integrations`).
+* **`Row` $\equiv$ `Entity` / `Record`**: A single discrete instance within a collection/table (e.g. a specific Project entity, an individual Need/Offer task entity, a scoped preference entity).
+
+---
+
+### 1.2 Multi-Tier Engine Overview
+
 INUO utilizes a **Tiered Storage Architecture** to deliver microsecond UI responsiveness while maintaining 100% ACID disk durability and offline resiliency:
+
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐

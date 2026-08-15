@@ -11,6 +11,8 @@ import { Behavior } from "../interfaces/Behavior";
 import { Rule } from "../interfaces/Rule";
 import { Principle } from "../interfaces/Principle";
 import { UserRole } from "../types/UserRole";
+import { persistStateToSqlite, rehydrateStateFromSqlite } from "./sqliteStorageEngine";
+
 
 export function getProjectPaths(rootDir: string = process.cwd()) {
   const techSpec = path.join(rootDir, "tech-specs", "main-specs-goals.md");
@@ -249,8 +251,9 @@ export function loadState(statePath: string): StateData {
   };
 
   if (!fs.existsSync(statePath)) {
+    const sqliteRehydrated = rehydrateStateFromSqlite(path.dirname(statePath));
     return {
-      needs: [],
+      needs: sqliteRehydrated?.needs || [],
       offers: [],
       matches: [],
       customVerbs: [],
@@ -281,9 +284,15 @@ export function loadState(statePath: string): StateData {
       progressiveSyncs: [],
       userPreferences: [],
       llmConfigurations: [],
-      workflowNodes: [],
+      workflowNodes: sqliteRehydrated?.workflowNodes || [],
       socialNetworkConfigurations: [],
       costGovernance: undefined,
+      aliases: [],
+      projects: sqliteRehydrated?.projects || [],
+      workspaces: sqliteRehydrated?.workspaces || [],
+      activeProject: undefined,
+      activeWorkspace: undefined,
+      preferences: sqliteRehydrated?.preferences || {},
     };
   }
   try {
@@ -344,8 +353,9 @@ export function loadState(statePath: string): StateData {
       preferences: parsed.preferences || {},
     };
   } catch {
+    const sqliteRehydrated = rehydrateStateFromSqlite(path.dirname(statePath));
     return {
-      needs: [],
+      needs: sqliteRehydrated?.needs || [],
       offers: [],
       matches: [],
       customVerbs: [],
@@ -376,22 +386,21 @@ export function loadState(statePath: string): StateData {
       progressiveSyncs: [],
       userPreferences: [],
       llmConfigurations: [],
-      workflowNodes: [],
+      workflowNodes: sqliteRehydrated?.workflowNodes || [],
       socialNetworkConfigurations: [],
       costGovernance: undefined,
       aliases: [],
-      projects: [],
-      workspaces: [],
+      projects: sqliteRehydrated?.projects || [],
+      workspaces: sqliteRehydrated?.workspaces || [],
       activeProject: undefined,
       activeWorkspace: undefined,
-      preferences: {},
+      preferences: sqliteRehydrated?.preferences || {},
     };
   }
 }
 
-import { persistStateToSqlite } from "./sqliteStorageEngine";
-
 export function saveState(statePath: string, data: StateData): void {
+
   // 1. Dual-Write: Export formatted JSON snapshot for Git inspection
   fs.writeFileSync(statePath, JSON.stringify(data, null, 2), "utf8");
 

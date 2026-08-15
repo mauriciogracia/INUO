@@ -89,6 +89,36 @@ test("Phase 2: Hybrid L1 RAM + L2 SQLite WAL Storage Layer Unit Tests", async (t
     assert.equal(mutatedTasks[0].verb, "Request");
   });
 
+  await t.test("Zero-Loss Auto-Recovery: loadState rehydrates seamlessly from SQLite when JSON is deleted", () => {
+    // 1. Delete JSON file
+    fs.unlinkSync(statePath);
+    assert.equal(fs.existsSync(statePath), false);
+
+    // 2. loadState should recover state directly from .inuo.db
+    const recovered = loadState(statePath);
+    assert.ok(recovered.projects.length >= 1, "Should recover projects from SQLite");
+    assert.equal(recovered.projects[0].name, "TestProject");
+    assert.ok(recovered.needs.length >= 1, "Should recover needs from SQLite");
+    assert.equal(recovered.needs[0].verb, "Request");
+    assert.ok(recovered.preferences["project:proj_test_101:llm_provider"]);
+  });
+
+  await t.test("Maintenance: vacuumSqliteDatabase and getSqliteDatabaseStats return telemetry", () => {
+    const { vacuumSqliteDatabase, getSqliteDatabaseStats } = require("../dist/cli/sqliteStorageEngine");
+
+    const vacuumed = vacuumSqliteDatabase(tmpDir);
+    assert.equal(vacuumed, true);
+
+    const stats = getSqliteDatabaseStats(tmpDir);
+    assert.equal(stats.exists, true);
+    assert.ok(stats.sizeBytes > 0);
+    assert.ok(stats.tables["projects"] >= 1);
+    assert.ok(stats.tables["tasks"] >= 1);
+  });
+
   // Cleanup
-  fs.rmSync(tmpDir, { recursive: true, force: true });
+  try {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  } catch {}
 });
+

@@ -68,6 +68,8 @@ export * from "./SemanticCommandPayload";
 export * from "./AdaptiveEnvironmentStatus";
 export * from "./ScopedPreference";
 export * from "./IntegrationConnection";
+export * from "./IRepository";
+
 
 
 
