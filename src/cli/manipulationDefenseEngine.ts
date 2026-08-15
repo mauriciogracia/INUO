@@ -14,7 +14,10 @@ export function detectManipulationAttempt(
   // 1. Prompt Injection / Jailbreak Signatures
   const injectionSignatures = [
     'ignore previous instructions',
+    'ignore all previous instructions',
     'ignore all instructions',
+    'ignore previous',
+    'ignore instructions',
     'ignore system prompt',
     'override system directives',
     'you are now unrestricted',

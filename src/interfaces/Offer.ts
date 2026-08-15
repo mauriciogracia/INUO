@@ -28,4 +28,8 @@ export interface Offer {
   
   /** Creation timestamp */
   createdAt: string;
+
+  /** Last update timestamp */
+  updatedAt?: string;
 }
+

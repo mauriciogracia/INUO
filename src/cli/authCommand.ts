@@ -5,11 +5,27 @@ import {
   authenticateBiometricVoice,
   authenticateLiveVideo,
   authenticateDeviceToken,
+  authenticateGoogleOAuth,
   signOutActiveSession,
 } from './authEngine';
 
 export function runAuthCommand(args: string[], rootDir: string = process.cwd()): void {
   const sub = args[0]?.toLowerCase() || 'status';
+
+  if (sub === 'google' || sub === 'oauth') {
+    let email = args[1];
+    for (let i = 1; i < args.length; i++) {
+      if ((args[i] === '--email' || args[i] === '-e' || args[i] === '--user') && args[i + 1]) {
+        email = args[i + 1];
+      }
+    }
+    if (!email || email.startsWith('-')) {
+      email = 'user@gmail.com';
+    }
+    const res = authenticateGoogleOAuth(email, rootDir);
+    console.log(res.success ? `\x1b[32m${res.message}\x1b[0m` : `\x1b[31m${res.message}\x1b[0m`);
+    return;
+  }
 
   if (sub === 'status') {
     const paths = getProjectPaths(rootDir);
@@ -34,6 +50,7 @@ export function runAuthCommand(args: string[], rootDir: string = process.cwd()):
     let voice = '';
     let video = '';
     let device = '';
+    let google = '';
 
     for (let i = 1; i < args.length; i++) {
       if (args[i] === '--passphrase' && args[i + 1]) passphrase = args[i + 1];
@@ -42,6 +59,14 @@ export function runAuthCommand(args: string[], rootDir: string = process.cwd()):
       if (args[i] === '--voice' && args[i + 1]) voice = args[i + 1];
       if (args[i] === '--video' && args[i + 1]) video = args[i + 1];
       if (args[i] === '--device' && args[i + 1]) device = args[i + 1];
+      if ((args[i] === '--google' || args[i] === '--oauth') && args[i + 1]) google = args[i + 1];
+      if (args[i] === '--google' && !args[i + 1]) google = 'user@gmail.com';
+    }
+
+    if (google) {
+      const res = authenticateGoogleOAuth(google, rootDir);
+      console.log(res.success ? `\x1b[32m${res.message}\x1b[0m` : `\x1b[31m${res.message}\x1b[0m`);
+      return;
     }
 
     if (passphrase) {
@@ -74,7 +99,7 @@ export function runAuthCommand(args: string[], rootDir: string = process.cwd()):
       return;
     }
 
-    console.log('\x1b[33m%s\x1b[0m', 'Usage: auth signin --passphrase <Secret> | --user <Name> --pin <PIN> | --user <Name> --voice <SampleId> | --user <Name> --video <FeedId> | --device <DeviceId>');
+    console.log('\x1b[33m%s\x1b[0m', 'Usage: auth google <email> | auth signin --google <email> | auth signin --passphrase <Secret> | --user <Name> --pin <PIN>');
     return;
   }
 
@@ -83,5 +108,6 @@ export function runAuthCommand(args: string[], rootDir: string = process.cwd()):
     return;
   }
 
-  console.log('Unknown subcommand for auth. Supported: "auth status", "auth signin", "auth signout"');
+  console.log('Unknown subcommand for auth. Supported: "auth google <email>", "auth status", "auth signin", "auth signout"');
 }
+

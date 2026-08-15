@@ -389,9 +389,16 @@ export function loadState(statePath: string): StateData {
   }
 }
 
+import { persistStateToSqlite } from "./sqliteStorageEngine";
+
 export function saveState(statePath: string, data: StateData): void {
+  // 1. Dual-Write: Export formatted JSON snapshot for Git inspection
   fs.writeFileSync(statePath, JSON.stringify(data, null, 2), "utf8");
+
+  // 2. Write-Through: Persist into L2 SQLite WAL database (.inuo.db)
+  persistStateToSqlite(data, path.dirname(statePath));
 }
+
 
 export function createContext(
   rootDir: string = process.cwd(),

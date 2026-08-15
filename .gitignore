@@ -21,6 +21,10 @@ jspm_packages/
 
 # Runtime Local State & Scratch Files
 .inuo-state.json
+.inuo.db*
+*.db
+*.db-wal
+*.db-shm
 scratch/
 
 # Graphify generated knowledge graph, caches, and intermediate files

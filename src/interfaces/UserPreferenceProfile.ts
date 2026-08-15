@@ -17,9 +17,16 @@ export interface UserPreferenceProfile {
   /** Explicit preference on tables (true = use them, false = avoid them) */
   preferTables?: boolean;
 
+  /** Recurring auto-sync prompt interval in minutes (0 = disabled, default = 15) */
+  autoSyncIntervalMinutes?: number;
+
+  /** True if user wants interactive prompts on sync intervals */
+  autoSyncPromptEnabled?: boolean;
+
   /** Number of preference signals captured so far */
   signalCount: number;
 
   /** ISO timestamp of last update */
   updatedAt: string;
 }
+

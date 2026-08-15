@@ -13,7 +13,7 @@ import {
   saveApiKey,
   processNaturalLanguageIntent,
 } from "./aiClient";
-import { checkAndApplySyncProtocol } from "./syncEngine";
+import { checkAndApplySyncProtocol, runSelectiveSyncCommand } from "./syncEngine";
 import { runEvolveCommand } from "./evolveCommand";
 import { runDetailCommand, runAnswerCommand } from "./detailCommand";
 import {
@@ -81,6 +81,24 @@ import {
   executeSemanticCommand,
   normalizeSemanticEntity,
 } from "./semanticDispatcher";
+import { runAdaptiveCommand } from "./adaptiveEnvironmentEngine";
+
+
+export function tokenizeCommandLine(input: string): string[] {
+  const tokens: string[] = [];
+  const regex = /[^\s"']+|"([^"]*)"|'([^']*)'/g;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(input)) !== null) {
+    if (match[1] !== undefined) {
+      tokens.push(match[1]);
+    } else if (match[2] !== undefined) {
+      tokens.push(match[2]);
+    } else {
+      tokens.push(match[0]);
+    }
+  }
+  return tokens;
+}
 
 export async function executeShellLine(
   trimmed: string,
@@ -93,8 +111,10 @@ export async function executeShellLine(
   const paths = getProjectPaths(rootDir);
   const stateData = loadState(paths.statePath);
 
-  const parts = resolvedLine.split(/\s+/);
+  const parts = tokenizeCommandLine(resolvedLine);
+  if (parts.length === 0) return;
   const cmd = parts[0].toLowerCase();
+
 
   // Check if first token is a canonical or localized Semantic Entity
   if (normalizeSemanticEntity(cmd)) {
@@ -271,11 +291,12 @@ export async function executeShellLine(
       break;
 
     case "sync":
-      const syncResult = checkAndApplySyncProtocol(rootDir);
-      writeOutput(
-        OutputChannelEnum.USER_REPLY,
-        `[${TOOL_NAME} Sync Engine] Status: ${syncResult.status} | Message: ${syncResult.message}`,
-      );
+      runSelectiveSyncCommand(parts.slice(1), rootDir);
+      break;
+
+    case "adapt":
+    case "adaptive":
+      await runAdaptiveCommand(parts.slice(1), rootDir);
       break;
 
     case "key":

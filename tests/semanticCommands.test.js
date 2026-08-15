@@ -147,6 +147,21 @@ test("INOU Semantic Entity-Action Command Grammar Unit Tests", async (t) => {
     assert.equal(state.currentRole, "MasterTrainer");
 
     await executeShellLine("preference add --key alias --name quick-status --target status", tmpDir);
+    await executeShellLine("preference update --key auto_sync_interval --value 20", tmpDir);
+    await executeShellLine("preference add --key llm_provider --value gemini-pro --project ProjectA", tmpDir);
+    await executeShellLine("preference add --key theme --value dark --workspace WorkspaceB", tmpDir);
+    await executeShellLine("preference add --key timeout --value 30 --task TaskC", tmpDir);
+
+    state = loadState(path.join(tmpDir, ".inuo-state.json"));
+    assert.equal(state.preferences.auto_sync_interval.value, 20);
+    assert.equal(state.preferences["project:ProjectA:llm_provider"].value, "gemini-pro");
+    assert.equal(state.preferences["workspace:WorkspaceB:theme"].value, "dark");
+    assert.equal(state.preferences["task:TaskC:timeout"].value, "30");
+
+    await executeShellLine("preference disable --key theme --workspace WorkspaceB", tmpDir);
+    state = loadState(path.join(tmpDir, ".inuo-state.json"));
+    assert.equal(state.preferences["workspace:WorkspaceB:theme"].enabled, false);
+
     await executeShellLine("preference list", tmpDir);
     await executeShellLine("preference remove --key alias --name quick-status", tmpDir);
   });

@@ -497,12 +497,12 @@ function executeTaskAction(
         runNodeCommand(["add", "--workflow", name], rootDir);
         return true;
       }
-      if (subType === "need" || (options.verb && !options.complement)) {
-        runNeedCommand(["create", "--verb", options.verb || "Request", "--object", options.object || "Item"], rootDir);
-        return true;
-      }
       if (subType === "offer" || options.complement) {
         runOfferCommand(["create", "--verb", options.verb || options.complement || "Provide", "--object", options.object || "Item"], rootDir);
+        return true;
+      }
+      if (subType === "need" || (options.verb && !options.complement)) {
+        runNeedCommand(["create", "--verb", options.verb || "Request", "--object", options.object || "Item"], rootDir);
         return true;
       }
 
@@ -593,8 +593,9 @@ function executeMemoryAction(
         return true;
       }
       if (subType === "principle" || options.principle) {
-        const title = options.title || options.principle || targetId || "New Principle";
-        runPrincipleCommand(["add", title], rootDir);
+        const name = options.name || options.title || options.principle || targetId || "New Principle";
+        const statement = options.statement || options.details || options.content || name;
+        runPrincipleCommand(["add", "--name", name, "--statement", statement], rootDir);
         return true;
       }
       // Default: skill learning
@@ -703,6 +704,24 @@ function executePreferenceAction(
         runAliasCommand(["add", aliasName, aliasTarget], rootDir);
         return true;
       }
+      if (key === "auto_sync_interval" || key === "sync_interval" || key === "autosync") {
+        const mins = parseInt(value || "15", 10) || 15;
+        const state = loadState(paths.statePath);
+        state.preferences = state.preferences || {};
+        state.preferences.auto_sync_interval = { value: mins, enabled: mins > 0, updatedAt: new Date().toISOString() };
+        saveState(paths.statePath, state);
+        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Auto-Sync prompt interval set to ${mins} minute(s).\x1b[0m`);
+        return true;
+      }
+      if (key === "auto_sync_prompt") {
+        const enabled = value !== "false" && value !== false;
+        const state = loadState(paths.statePath);
+        state.preferences = state.preferences || {};
+        state.preferences.auto_sync_prompt = { value: enabled, enabled: true, updatedAt: new Date().toISOString() };
+        saveState(paths.statePath, state);
+        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Auto-Sync prompt ${enabled ? "enabled" : "disabled"}.\x1b[0m`);
+        return true;
+      }
       if (key === "social" || key === "socialmedia") {
         if (options.broadcast || options.message) {
           runSocialMediaCommand(["broadcast", "--message", options.broadcast || options.message], rootDir);
@@ -713,41 +732,77 @@ function executePreferenceAction(
         return true;
       }
 
-      // Generic preference key-value store
+      // Determine scope
+      let scope: "global" | "project" | "workspace" | "task" = "global";
+      let scopeId: string | undefined = undefined;
+
+      if (options.task || options.taskId) {
+        scope = "task";
+        scopeId = options.task || options.taskId;
+      } else if (options.workspace || options.workspaceId) {
+        scope = "workspace";
+        scopeId = options.workspace || options.workspaceId;
+      } else if (options.project || options.projectId) {
+        scope = "project";
+        scopeId = options.project || options.projectId;
+      }
+
+      const storageKey = scope === "global" ? key : `${scope}:${scopeId}:${key}`;
+
       const state = loadState(paths.statePath);
       state.preferences = state.preferences || {};
-      state.preferences[key] = { value, enabled: true, updatedAt: new Date().toISOString() };
+      const existing = state.preferences[storageKey];
+      state.preferences[storageKey] = {
+        key,
+        value,
+        scope,
+        scopeId,
+        enabled: true,
+        createdAt: existing?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
       saveState(paths.statePath, state);
-      writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Preference saved: ${key} = ${value}\x1b[0m`);
+      const scopeLabel = scope === "global" ? "Global" : `[${scope.toUpperCase()}: ${scopeId}]`;
+      writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Preference saved (${scopeLabel}): ${key} = ${value}\x1b[0m`);
       return true;
     }
 
     case "enable": {
       if (!key) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `Usage: preference enable --key <keyName>`);
+        writeOutput(OutputChannelEnum.USER_REPLY, `Usage: preference enable --key <keyName> [--project|--workspace|--task <id>]`);
         return false;
       }
+      const scope = options.task ? "task" : options.workspace ? "workspace" : options.project ? "project" : "global";
+      const scopeId = options.task || options.workspace || options.project;
+      const storageKey = scope === "global" ? key : `${scope}:${scopeId}:${key}`;
+
       const state = loadState(paths.statePath);
       state.preferences = state.preferences || {};
-      if (state.preferences[key]) {
-        state.preferences[key].enabled = true;
+      if (state.preferences[storageKey]) {
+        state.preferences[storageKey].enabled = true;
+        state.preferences[storageKey].updatedAt = new Date().toISOString();
         saveState(paths.statePath, state);
-        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Preference enabled: ${key}\x1b[0m`);
+        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Preference enabled: ${storageKey}\x1b[0m`);
       }
       return true;
     }
 
     case "disable": {
       if (!key) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `Usage: preference disable --key <keyName>`);
+        writeOutput(OutputChannelEnum.USER_REPLY, `Usage: preference disable --key <keyName> [--project|--workspace|--task <id>]`);
         return false;
       }
+      const scope = options.task ? "task" : options.workspace ? "workspace" : options.project ? "project" : "global";
+      const scopeId = options.task || options.workspace || options.project;
+      const storageKey = scope === "global" ? key : `${scope}:${scopeId}:${key}`;
+
       const state = loadState(paths.statePath);
       state.preferences = state.preferences || {};
-      if (state.preferences[key]) {
-        state.preferences[key].enabled = false;
+      if (state.preferences[storageKey]) {
+        state.preferences[storageKey].enabled = false;
+        state.preferences[storageKey].updatedAt = new Date().toISOString();
         saveState(paths.statePath, state);
-        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[33m✔ Preference disabled: ${key}\x1b[0m`);
+        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[33m✔ Preference disabled: ${storageKey}\x1b[0m`);
       }
       return true;
     }
@@ -758,11 +813,15 @@ function executePreferenceAction(
         runAliasCommand(["remove", aliasName], rootDir);
         return true;
       }
+      const scope = options.task ? "task" : options.workspace ? "workspace" : options.project ? "project" : "global";
+      const scopeId = options.task || options.workspace || options.project;
+      const storageKey = scope === "global" ? key : `${scope}:${scopeId}:${key}`;
+
       const state = loadState(paths.statePath);
       state.preferences = state.preferences || {};
-      delete state.preferences[key];
+      delete state.preferences[storageKey];
       saveState(paths.statePath, state);
-      writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Preference removed: ${key}\x1b[0m`);
+      writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Preference removed: ${storageKey}\x1b[0m`);
       return true;
     }
 
@@ -774,6 +833,18 @@ function executePreferenceAction(
       writeOutput(OutputChannelEnum.USER_REPLY, `  • Active Role: ${state.currentRole || "RegularUser"}`);
       writeOutput(OutputChannelEnum.USER_REPLY, `  • Active User: ${state.activeUser?.userName || "System"}`);
       writeOutput(OutputChannelEnum.USER_REPLY, `  • API Key: ${getStoredApiKey(rootDir) ? "Connected (****)" : "Not Set"}`);
+
+      const prefs = state.preferences || {};
+      const customKeys = Object.keys(prefs).filter((k) => !["lastSyncAt", "auto_sync_interval", "auto_sync_prompt"].includes(k));
+      if (customKeys.length > 0) {
+        writeOutput(OutputChannelEnum.USER_REPLY, `\n\x1b[35m--- Custom & Scoped Preferences ---\x1b[0m`);
+        customKeys.forEach((k) => {
+          const item = prefs[k];
+          const sc = item.scope ? `[${item.scope.toUpperCase()}${item.scopeId ? ":" + item.scopeId : ""}]` : "[GLOBAL]";
+          const status = item.enabled !== false ? "\x1b[32m(Enabled)\x1b[0m" : "\x1b[31m(Disabled)\x1b[0m";
+          writeOutput(OutputChannelEnum.USER_REPLY, `  • ${sc} ${item.key || k} = ${JSON.stringify(item.value)} ${status}`);
+        });
+      }
       runAliasCommand(["list"], rootDir);
       return true;
     }

@@ -28,4 +28,12 @@ export * from "./SocialNetworkName";
 export * from "./TierFallbackMode";
 export * from "./SemanticEntity";
 export * from "./SemanticAction";
+export * from "./ConnectivityState";
+export * from "./StorageHealthState";
+export * from "./PreferenceScope";
+export * from "./IntegrationCategory";
+export * from "./IntegrationAuthType";
+
+
+
 
