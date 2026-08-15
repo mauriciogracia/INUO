@@ -38,7 +38,10 @@ export function getSummary(rootDir: string = process.cwd()): AiUsageSummary {
 
   if (env.tokenBudgetMonthly) {
     summary.budgetMonthly = env.tokenBudgetMonthly;
-    summary.budgetUsedPct = Math.min(100, Math.round((totalTokens / env.tokenBudgetMonthly) * 100));
+    summary.budgetUsedPct = Math.min(
+      100,
+      Math.round((totalTokens / env.tokenBudgetMonthly) * 100),
+    );
   }
 
   return summary;
@@ -47,9 +50,16 @@ export function getSummary(rootDir: string = process.cwd()): AiUsageSummary {
 /** Queries the provider API for real model capacity data. Returns null if no key is configured. */
 export async function queryProviderCapacity(
   rootDir: string = process.cwd(),
-): Promise<{ contextWindowTokens: number; maxOutputTokens: number; connected: true } | { connected: false; error: string }> {
+): Promise<
+  | { contextWindowTokens: number; maxOutputTokens: number; connected: true }
+  | { connected: false; error: string }
+> {
   const env = loadEnvironment(rootDir);
-  if (!env.geminiApiKey) return { connected: false, error: "No API key configured. Run: key <YOUR_GEMINI_API_KEY>" };
+  if (!env.geminiApiKey)
+    return {
+      connected: false,
+      error: "No API key configured. Run: key <YOUR_GEMINI_API_KEY>",
+    };
   try {
     const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
     const model = await ai.models.get({ model: env.defaultModel });
@@ -76,7 +86,12 @@ function bar(pct: number, width = 10): string {
 
 export function formatUsageDisplay(
   summary: AiUsageSummary,
-  capacity?: { connected: boolean; contextWindowTokens?: number; maxOutputTokens?: number; error?: string },
+  capacity?: {
+    connected: boolean;
+    contextWindowTokens?: number;
+    maxOutputTokens?: number;
+    error?: string;
+  },
 ): string {
   const lines: string[] = [`=== AI Usage — ${summary.model} ===\n`];
 
@@ -84,8 +99,12 @@ export function formatUsageDisplay(
   if (capacity) {
     lines.push("[Provider]");
     if (capacity.connected) {
-      lines.push(`Context window:   ${fmtTokens(capacity.contextWindowTokens!)} tokens (input)`);
-      lines.push(`Max output:       ${fmtTokens(capacity.maxOutputTokens!)} tokens`);
+      lines.push(
+        `Context window:   ${fmtTokens(capacity.contextWindowTokens!)} tokens (input)`,
+      );
+      lines.push(
+        `Max output:       ${fmtTokens(capacity.maxOutputTokens!)} tokens`,
+      );
       lines.push("API status:       ✔ Connected\n");
     } else {
       lines.push(`API status:       ✖ ${capacity.error}\n`);
@@ -102,8 +121,12 @@ export function formatUsageDisplay(
     lines.push(`Output tokens:    ${fmtTokens(summary.totalOutputTokens)}`);
     if (summary.budgetMonthly) {
       const pct = summary.budgetUsedPct!;
-      lines.push(`Total tokens:     ${fmtTokens(summary.totalTokens)} / ${fmtTokens(summary.budgetMonthly)} (${pct}%)  ${bar(pct)}`);
-      lines.push(`Remaining:        ${fmtTokens(summary.budgetMonthly - summary.totalTokens)} tokens`);
+      lines.push(
+        `Total tokens:     ${fmtTokens(summary.totalTokens)} / ${fmtTokens(summary.budgetMonthly)} (${pct}%)  ${bar(pct)}`,
+      );
+      lines.push(
+        `Remaining:        ${fmtTokens(summary.budgetMonthly - summary.totalTokens)} tokens`,
+      );
     } else {
       lines.push(`Total tokens:     ${fmtTokens(summary.totalTokens)}`);
     }
@@ -111,7 +134,9 @@ export function formatUsageDisplay(
   }
 
   if (summary.budgetMonthly === undefined) {
-    lines.push("\nTip: set GEMINI_TOKEN_BUDGET=500000 in .env to track remaining budget.");
+    lines.push(
+      "\nTip: set GEMINI_TOKEN_BUDGET=500000 in .env to track remaining budget.",
+    );
   }
 
   return lines.join("\n");
@@ -123,4 +148,3 @@ export function resetUsage(rootDir: string = process.cwd()): void {
   state.aiUsageLog = [];
   saveState(paths.statePath, state);
 }
-

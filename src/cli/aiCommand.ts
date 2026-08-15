@@ -1,6 +1,11 @@
 import { writeOutput } from "./outputRouter";
 import { OutputChannelEnum } from "../enums/OutputChannelEnum";
-import { getSummary, formatUsageDisplay, resetUsage, queryProviderCapacity } from "./usageEngine";
+import {
+  getSummary,
+  formatUsageDisplay,
+  resetUsage,
+  queryProviderCapacity,
+} from "./usageEngine";
 
 export async function runAiCommand(
   args: string[],
@@ -18,7 +23,10 @@ export async function runAiCommand(
       Promise.resolve(getSummary(rootDir)),
       queryProviderCapacity(rootDir),
     ]);
-    writeOutput(OutputChannelEnum.USER_REPLY, formatUsageDisplay(summary, capacity));
+    writeOutput(
+      OutputChannelEnum.USER_REPLY,
+      formatUsageDisplay(summary, capacity),
+    );
     return;
   }
 

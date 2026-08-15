@@ -16,4 +16,3 @@ export interface AiUsageSummary {
   /** 0–100, only present when budgetMonthly is set. */
   budgetUsedPct?: number;
 }
-
