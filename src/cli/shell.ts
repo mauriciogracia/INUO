@@ -598,7 +598,9 @@ export async function dispatchSingleCommand(
   rootDir: string = process.cwd(),
 ): Promise<void> {
   checkAndApplySyncProtocol(rootDir);
-  const line = args.join(" ");
+  const line = args
+    .map((arg) => (arg.includes(" ") && !arg.startsWith('"') && !arg.startsWith("'") ? `"${arg}"` : arg))
+    .join(" ");
   const needsPrompter =
     args[0]?.toLowerCase() === "llm" && args[1]?.toLowerCase() === "add";
   const prompter = needsPrompter
@@ -610,3 +612,4 @@ export async function dispatchSingleCommand(
     prompter?.close?.();
   }
 }
+

@@ -497,24 +497,26 @@ function executeTaskAction(
         runNodeCommand(["add", "--workflow", name], rootDir);
         return true;
       }
-      if (subType === "offer" || options.complement) {
-        runOfferCommand(["create", "--verb", options.verb || options.complement || "Provide", "--object", options.object || "Item"], rootDir);
+      const offerVerbs = ["donate", "provide", "supply", "deliver", "lend", "share", "teach", "offer"];
+      const isOfferVerb = options.verb && offerVerbs.includes(options.verb.toLowerCase());
+      if (subType === "offer" || options.complement || isOfferVerb) {
+        runOfferCommand(["create", "--verb", options.complement || options.verb || "Provide", "--object", options.object || options.title || options.name || "Item"], rootDir);
         return true;
       }
-      if (subType === "need" || (options.verb && !options.complement)) {
-        runNeedCommand(["create", "--verb", options.verb || "Request", "--object", options.object || "Item"], rootDir);
+      if (subType === "need" || options.verb) {
+        runNeedCommand(["create", "--verb", options.verb || "Request", "--object", options.object || options.title || options.name || "Item"], rootDir);
         return true;
       }
 
+
+
       // Default to adding a task node to the DAG
       const title = options.title || options.name || targetId || "New Task";
-      const wfId = options.workflow || options.parent;
-      const cmdArgs = ["add", "--title", title];
-      if (wfId) cmdArgs.push("--workflow", wfId);
-      if (options.role) cmdArgs.push("--role", options.role);
-      runNodeCommand(cmdArgs, rootDir);
+      const role = options.role || options.engine || "TaskWorker";
+      runNodeCommand(["add", title, role], rootDir);
       return true;
     }
+
 
     case "update": {
       if (!targetId) {
@@ -561,11 +563,20 @@ function executeTaskAction(
         runMatchCommand(rootDir);
         return true;
       }
+      if (subType === "need" || rawArgs[0]?.toLowerCase() === "need" || rawArgs[0]?.toLowerCase() === "necesidad") {
+        runNeedCommand(["list"], rootDir);
+        return true;
+      }
+      if (subType === "offer" || rawArgs[0]?.toLowerCase() === "offer" || rawArgs[0]?.toLowerCase() === "oferta") {
+        runOfferCommand(["list"], rootDir);
+        return true;
+      }
       const wfId = options.workflow || targetId;
       const cmdArgs = wfId ? ["list", wfId] : ["list"];
       runNodeCommand(cmdArgs, rootDir);
       return true;
     }
+
   }
 }
 
