@@ -1,11 +1,12 @@
 import { writeOutput } from "./outputRouter";
 import { OutputChannelEnum } from "../enums/OutputChannelEnum";
 import {
-  getSummary,
-  formatUsageDisplay,
-  resetUsage,
   queryProviderCapacity,
+  getSessionStats,
+  resetSessionStats,
+  formatUsageDisplay,
 } from "./usageEngine";
+import { loadEnvironment } from "./environment";
 
 export async function runAiCommand(
   args: string[],
@@ -15,18 +16,16 @@ export async function runAiCommand(
 
   if (sub === "usage") {
     if (args[1] === "--reset") {
-      resetUsage(rootDir);
-      writeOutput(OutputChannelEnum.USER_REPLY, "✔ AI usage log cleared.");
+      resetSessionStats();
+      writeOutput(OutputChannelEnum.USER_REPLY, "✔ Session usage counters reset.");
       return;
     }
-    const [summary, capacity] = await Promise.all([
-      Promise.resolve(getSummary(rootDir)),
+    const env = loadEnvironment(rootDir);
+    const [capacity, session] = await Promise.all([
       queryProviderCapacity(rootDir),
+      Promise.resolve(getSessionStats()),
     ]);
-    writeOutput(
-      OutputChannelEnum.USER_REPLY,
-      formatUsageDisplay(summary, capacity),
-    );
+    writeOutput(OutputChannelEnum.USER_REPLY, formatUsageDisplay(capacity, session, env.tokenBudgetMonthly));
     return;
   }
 

@@ -1,72 +1,63 @@
 import { GoogleGenAI } from "@google/genai";
-import { getProjectPaths, loadState, saveState } from "./context";
 import { loadEnvironment } from "./environment";
-import { AiUsageRecord } from "../interfaces/AiUsageRecord";
 import { AiUsageSummary } from "../interfaces/AiUsageSummary";
 
-const MAX_LOG = 1000;
+// In-memory session totals — reset on process restart, never written to disk.
+let _sessionRequests = 0;
+let _sessionInputTokens = 0;
+let _sessionOutputTokens = 0;
+let _sessionModel = "";
 
-export function recordUsage(
-  record: Omit<AiUsageRecord, "id">,
-  rootDir: string = process.cwd(),
+export function addSessionTokens(
+  inputTokens: number,
+  outputTokens: number,
+  model: string,
 ): void {
-  const paths = getProjectPaths(rootDir);
-  const state = loadState(paths.statePath);
-  const entry: AiUsageRecord = { id: `ai_${Date.now()}`, ...record };
-  state.aiUsageLog = [...(state.aiUsageLog ?? []), entry].slice(-MAX_LOG);
-  saveState(paths.statePath, state);
+  _sessionRequests += 1;
+  _sessionInputTokens += inputTokens;
+  _sessionOutputTokens += outputTokens;
+  _sessionModel = model;
 }
 
-export function getSummary(rootDir: string = process.cwd()): AiUsageSummary {
-  const paths = getProjectPaths(rootDir);
-  const state = loadState(paths.statePath);
-  const env = loadEnvironment(rootDir);
-  const log = state.aiUsageLog ?? [];
-
-  const totalInputTokens = log.reduce((s, r) => s + r.inputTokens, 0);
-  const totalOutputTokens = log.reduce((s, r) => s + r.outputTokens, 0);
-  const totalTokens = totalInputTokens + totalOutputTokens;
-
-  const summary: AiUsageSummary = {
-    model: log[log.length - 1]?.model ?? env.defaultModel,
-    requestCount: log.length,
-    totalInputTokens,
-    totalOutputTokens,
-    totalTokens,
-    periodStart: log[0]?.timestamp ?? new Date().toISOString(),
+export function getSessionStats(): Pick<
+  AiUsageSummary,
+  "requestCount" | "totalInputTokens" | "totalOutputTokens" | "totalTokens" | "model"
+> {
+  return {
+    model: _sessionModel,
+    requestCount: _sessionRequests,
+    totalInputTokens: _sessionInputTokens,
+    totalOutputTokens: _sessionOutputTokens,
+    totalTokens: _sessionInputTokens + _sessionOutputTokens,
   };
-
-  if (env.tokenBudgetMonthly) {
-    summary.budgetMonthly = env.tokenBudgetMonthly;
-    summary.budgetUsedPct = Math.min(
-      100,
-      Math.round((totalTokens / env.tokenBudgetMonthly) * 100),
-    );
-  }
-
-  return summary;
 }
 
-/** Queries the provider API for real model capacity data. Returns null if no key is configured. */
+export function resetSessionStats(): void {
+  _sessionRequests = 0;
+  _sessionInputTokens = 0;
+  _sessionOutputTokens = 0;
+  _sessionModel = "";
+}
+
+/** Queries the provider API for real model capacity data. */
 export async function queryProviderCapacity(
   rootDir: string = process.cwd(),
 ): Promise<
-  | { contextWindowTokens: number; maxOutputTokens: number; connected: true }
+  | { connected: true; contextWindowTokens: number; maxOutputTokens: number; model: string }
   | { connected: false; error: string }
 > {
   const env = loadEnvironment(rootDir);
-  if (!env.geminiApiKey)
-    return {
-      connected: false,
-      error: "No API key configured. Run: key <YOUR_GEMINI_API_KEY>",
-    };
+  if (!env.geminiApiKey) {
+    return { connected: false, error: "No API key configured. Run: key <YOUR_GEMINI_API_KEY>" };
+  }
   try {
     const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
-    const model = await ai.models.get({ model: env.defaultModel });
+    const m = await ai.models.get({ model: env.defaultModel });
     return {
       connected: true,
-      contextWindowTokens: model.inputTokenLimit ?? 0,
-      maxOutputTokens: model.outputTokenLimit ?? 0,
+      model: m.name ?? env.defaultModel,
+      contextWindowTokens: m.inputTokenLimit ?? 0,
+      maxOutputTokens: m.outputTokenLimit ?? 0,
     };
   } catch (err: any) {
     return { connected: false, error: err.message ?? "Unknown error" };
@@ -85,66 +76,39 @@ function bar(pct: number, width = 10): string {
 }
 
 export function formatUsageDisplay(
-  summary: AiUsageSummary,
-  capacity?: {
-    connected: boolean;
-    contextWindowTokens?: number;
-    maxOutputTokens?: number;
-    error?: string;
-  },
+  capacity: Awaited<ReturnType<typeof queryProviderCapacity>>,
+  session: ReturnType<typeof getSessionStats>,
+  budgetMonthly?: number,
 ): string {
-  const lines: string[] = [`=== AI Usage — ${summary.model} ===\n`];
+  const modelLabel = capacity.connected ? capacity.model : (session.model || "unknown");
+  const lines: string[] = [`=== AI Usage — ${modelLabel} ===\n`];
 
-  // Provider section
-  if (capacity) {
-    lines.push("[Provider]");
-    if (capacity.connected) {
-      lines.push(
-        `Context window:   ${fmtTokens(capacity.contextWindowTokens!)} tokens (input)`,
-      );
-      lines.push(
-        `Max output:       ${fmtTokens(capacity.maxOutputTokens!)} tokens`,
-      );
-      lines.push("API status:       ✔ Connected\n");
-    } else {
-      lines.push(`API status:       ✖ ${capacity.error}\n`);
-    }
-  }
-
-  // Local tracking
-  lines.push("[Session usage]");
-  if (summary.requestCount === 0) {
-    lines.push("No LLM calls recorded yet.");
+  lines.push("[Provider]");
+  if (capacity.connected) {
+    lines.push(`Context window:   ${fmtTokens(capacity.contextWindowTokens)} tokens (input)`);
+    lines.push(`Max output:       ${fmtTokens(capacity.maxOutputTokens)} tokens`);
+    lines.push("API status:       ✔ Connected\n");
   } else {
-    lines.push(`Requests:         ${summary.requestCount}`);
-    lines.push(`Input tokens:     ${fmtTokens(summary.totalInputTokens)}`);
-    lines.push(`Output tokens:    ${fmtTokens(summary.totalOutputTokens)}`);
-    if (summary.budgetMonthly) {
-      const pct = summary.budgetUsedPct!;
-      lines.push(
-        `Total tokens:     ${fmtTokens(summary.totalTokens)} / ${fmtTokens(summary.budgetMonthly)} (${pct}%)  ${bar(pct)}`,
-      );
-      lines.push(
-        `Remaining:        ${fmtTokens(summary.budgetMonthly - summary.totalTokens)} tokens`,
-      );
-    } else {
-      lines.push(`Total tokens:     ${fmtTokens(summary.totalTokens)}`);
-    }
-    lines.push(`\nPeriod start:     ${summary.periodStart}`);
+    lines.push(`API status:       ✖ ${capacity.error}\n`);
   }
 
-  if (summary.budgetMonthly === undefined) {
-    lines.push(
-      "\nTip: set GEMINI_TOKEN_BUDGET=500000 in .env to track remaining budget.",
-    );
+  lines.push("[Session usage]");
+  if (session.requestCount === 0) {
+    lines.push("No LLM calls in this session yet.");
+  } else {
+    lines.push(`Requests:         ${session.requestCount}`);
+    lines.push(`Input tokens:     ${fmtTokens(session.totalInputTokens)}`);
+    lines.push(`Output tokens:    ${fmtTokens(session.totalOutputTokens)}`);
+    if (budgetMonthly) {
+      const pct = Math.min(100, Math.round((session.totalTokens / budgetMonthly) * 100));
+      lines.push(`Total tokens:     ${fmtTokens(session.totalTokens)} / ${fmtTokens(budgetMonthly)} (${pct}%)  ${bar(pct)}`);
+      lines.push(`Remaining:        ${fmtTokens(Math.max(0, budgetMonthly - session.totalTokens))} tokens`);
+    } else {
+      lines.push(`Total tokens:     ${fmtTokens(session.totalTokens)}`);
+      lines.push("\nTip: set GEMINI_TOKEN_BUDGET=500000 in .env to track remaining budget.");
+    }
   }
 
   return lines.join("\n");
 }
 
-export function resetUsage(rootDir: string = process.cwd()): void {
-  const paths = getProjectPaths(rootDir);
-  const state = loadState(paths.statePath);
-  state.aiUsageLog = [];
-  saveState(paths.statePath, state);
-}

@@ -5,13 +5,11 @@ export interface AiUsageSummary {
   totalInputTokens: number;
   totalOutputTokens: number;
   totalTokens: number;
-  /** ISO timestamp of the oldest record in the current log window. */
-  periodStart: string;
   /** Live from provider API — input context window size in tokens. */
   contextWindowTokens?: number;
   /** Live from provider API — max output tokens per call. */
   maxOutputTokens?: number;
-  /** Configured monthly token budget (from GEMINI_TOKEN_BUDGET). */
+  /** Configured token budget (from GEMINI_TOKEN_BUDGET). */
   budgetMonthly?: number;
   /** 0–100, only present when budgetMonthly is set. */
   budgetUsedPct?: number;

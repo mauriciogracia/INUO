@@ -8,7 +8,7 @@ import { calculateInuoVersion } from "./versionEngine";
 import { getProjectPaths, loadState } from "./context";
 import { OperatingModeConfig } from "../interfaces/OperatingModeConfig";
 import { TOOL_NAME, TOOL_PROMPT } from "./brand";
-import { getSummary } from "./usageEngine";
+import { getSessionStats } from "./usageEngine";
 
 export interface WebServerOptions {
   port?: number;
@@ -97,10 +97,7 @@ export function startWebServer(options: WebServerOptions = {}): http.Server {
       succinct: modeConfig.isSuccinctMode !== false,
       debugLevel:
         modeConfig.debugLevel !== undefined ? modeConfig.debugLevel : 1,
-      aiUsage: (({ requestCount, totalTokens }) => ({
-        requestCount,
-        totalTokens,
-      }))(getSummary(rootDir)),
+      aiUsage: (({ requestCount, totalTokens }) => ({ requestCount, totalTokens }))(getSessionStats()),
     });
   });
 
