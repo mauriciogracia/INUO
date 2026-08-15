@@ -51,6 +51,9 @@ import { OperatingModeConfig } from "../interfaces/OperatingModeConfig";
 import { InteractiveQuestionSpec } from "../interfaces/InteractiveQuestionSpec";
 import { MasterMindSyncProgress } from "../interfaces/MasterMindSyncProgress";
 import { UserPreferenceProfile } from "../interfaces/UserPreferenceProfile";
+import { LLMConfiguration } from "../interfaces/LLMConfiguration";
+import { WorkflowNode } from "../interfaces/WorkflowNode";
+import { SocialNetworkConfiguration } from "../interfaces/SocialNetworkConfiguration";
 
 export interface StateData {
   needs: Need[];
@@ -79,6 +82,9 @@ export interface StateData {
   interactiveQuestions?: InteractiveQuestionSpec[];
   progressiveSyncs?: MasterMindSyncProgress[];
   userPreferences?: UserPreferenceProfile[];
+  llmConfigurations?: LLMConfiguration[];
+  workflowNodes?: WorkflowNode[];
+  socialNetworkConfigurations?: SocialNetworkConfiguration[];
 }
 
 export const BASELINE_ENGINES: EngineConfig[] = [
@@ -256,6 +262,9 @@ export function loadState(statePath: string): StateData {
       interactiveQuestions: [],
       progressiveSyncs: [],
       userPreferences: [],
+      llmConfigurations: [],
+      workflowNodes: [],
+      socialNetworkConfigurations: [],
     };
   }
   try {
@@ -304,6 +313,9 @@ export function loadState(statePath: string): StateData {
       interactiveQuestions: parsed.interactiveQuestions || [],
       progressiveSyncs: parsed.progressiveSyncs || [],
       userPreferences: parsed.userPreferences || [],
+      llmConfigurations: parsed.llmConfigurations || [],
+      workflowNodes: parsed.workflowNodes || [],
+      socialNetworkConfigurations: parsed.socialNetworkConfigurations || [],
     };
   } catch {
     return {
@@ -337,6 +349,9 @@ export function loadState(statePath: string): StateData {
       interactiveQuestions: [],
       progressiveSyncs: [],
       userPreferences: [],
+      llmConfigurations: [],
+      workflowNodes: [],
+      socialNetworkConfigurations: [],
     };
   }
 }

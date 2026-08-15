@@ -13,3 +13,10 @@ All project guidelines, single-definition file constraints (`src/enums/`, `src/t
 - After completing and validating a task, refresh an existing graph with `graphify . --update` as a best-effort final step.
 - If Graphify is unavailable, unconfigured, interrupted, or fails, report that briefly and leave the completed task unchanged.
 - All files under `graphify-out/` are generated local artifacts and must remain ignored by Git.
+
+## Improvement Tracking Workflow
+
+- Pending improvements are tracked in `to-improve/`.
+- Completed improvements are tracked in `improved/`.
+- Keep one markdown file per improvement item and keep file names stable.
+- After adding, editing, or moving improvement items, run `npm run improvements:sync` to regenerate `INDEX.md` files.

@@ -38,6 +38,42 @@ document.addEventListener("DOMContentLoaded", () => {
   const systemConnectedMsg = document.getElementById(
     "system-connected-msg",
   ) as HTMLElement;
+  const llmDialog = document.getElementById(
+    "llm-config-dialog",
+  ) as HTMLDialogElement;
+  const llmForm = document.getElementById("llm-config-form") as HTMLFormElement;
+  const llmEngineName = document.getElementById(
+    "llm-engine-name",
+  ) as HTMLElement;
+  const llmConfigurationName = document.getElementById(
+    "llm-configuration-name",
+  ) as HTMLInputElement;
+  const llmModel = document.getElementById("llm-model") as HTMLInputElement;
+  const llmBaseUrl = document.getElementById(
+    "llm-base-url",
+  ) as HTMLInputElement;
+  const llmPlanMode = document.getElementById(
+    "llm-plan-mode",
+  ) as HTMLInputElement;
+  const llmExecuteMode = document.getElementById(
+    "llm-execute-mode",
+  ) as HTMLInputElement;
+  const llmCredentialGuidance = document.getElementById(
+    "llm-credential-guidance",
+  ) as HTMLElement;
+  const llmProviderDocs = document.getElementById(
+    "llm-provider-docs",
+  ) as HTMLAnchorElement;
+  const llmFormError = document.getElementById("llm-form-error") as HTMLElement;
+  const llmDialogSave = document.getElementById(
+    "llm-dialog-save",
+  ) as HTMLButtonElement;
+  const llmDialogClose = document.getElementById(
+    "llm-dialog-close",
+  ) as HTMLButtonElement;
+  const llmDialogCancel = document.getElementById(
+    "llm-dialog-cancel",
+  ) as HTMLButtonElement;
 
   interface StatusResponse {
     version: string;
@@ -54,12 +90,31 @@ document.addEventListener("DOMContentLoaded", () => {
     serverStartTime?: string;
   }
 
+  interface LLMProviderSetup {
+    engineName: string;
+    defaultConfigurationName: string;
+    defaultModel: string;
+    defaultBaseUrl?: string;
+    credentialEnvironmentVariable?: string;
+    documentationUrl?: string;
+  }
+
+  interface CommandResponse {
+    status?: string;
+    error?: string;
+    uiAction?: {
+      type: string;
+      setup: LLMProviderSetup;
+    };
+  }
+
   let activeTab = "conversation";
   let thinkingCount = 0;
   let debugCount = 0;
   let knownServerStartTime: string | null = null;
   let uiStrings: WebUiStrings = getStrings("es");
   let thinkingIndicator: HTMLElement | null = null;
+  let activeLLMSetup: LLMProviderSetup | null = null;
 
   // 1. Tab Switching Handler
   tabBtns.forEach((btn) => {
@@ -246,22 +301,66 @@ document.addEventListener("DOMContentLoaded", () => {
     logViewport.scrollTop = logViewport.scrollHeight;
   }
 
+  function openLLMConfigurationDialog(setup: LLMProviderSetup): void {
+    activeLLMSetup = setup;
+    llmEngineName.textContent = setup.engineName;
+    llmConfigurationName.value = setup.defaultConfigurationName;
+    llmModel.value = setup.defaultModel;
+    llmBaseUrl.value = setup.defaultBaseUrl ?? "";
+    llmPlanMode.checked = true;
+    llmExecuteMode.checked = false;
+    llmFormError.textContent = "";
+
+    if (setup.credentialEnvironmentVariable) {
+      llmCredentialGuidance.textContent =
+        `Set ${setup.credentialEnvironmentVariable} in the server environment. ` +
+        "Credentials are never entered or stored in this form.";
+    } else {
+      llmCredentialGuidance.textContent =
+        "This provider profile does not require a credential environment variable.";
+    }
+
+    if (setup.documentationUrl) {
+      llmProviderDocs.href = setup.documentationUrl;
+      llmProviderDocs.hidden = false;
+    } else {
+      llmProviderDocs.removeAttribute("href");
+      llmProviderDocs.hidden = true;
+    }
+
+    llmDialog.showModal();
+    llmConfigurationName.focus();
+    llmConfigurationName.select();
+  }
+
+  function closeLLMConfigurationDialog(): void {
+    activeLLMSetup = null;
+    llmFormError.textContent = "";
+    llmDialog.close();
+    commandInput.focus();
+  }
+
   async function sendCommand(command: string): Promise<void> {
     try {
       const res = await fetch("/api/command", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ command }),
+        body: JSON.stringify({ command, uiMode: true }),
       });
+      const body = (await res.json().catch(() => ({}))) as CommandResponse;
       if (!res.ok) {
-        const body = await res
-          .json()
-          .catch(() => ({ error: "Unknown server error" }));
         appendLog(
           "DEBUG",
-          `[Command Error] HTTP ${res.status} — ${(body as { error?: string }).error ?? "Unknown"}`,
+          `[Command Error] HTTP ${res.status} — ${body.error ?? "Unknown"}`,
         );
         appendErrorWithRetry(uiStrings.errorServer, command);
+        return;
+      }
+      if (
+        body.status === "input_required" &&
+        body.uiAction?.type === "LLM_CONFIGURATION"
+      ) {
+        openLLMConfigurationDialog(body.uiAction.setup);
       }
     } catch (err) {
       appendLog(
@@ -271,6 +370,50 @@ document.addEventListener("DOMContentLoaded", () => {
       appendErrorWithRetry(uiStrings.errorNetwork, command);
     }
   }
+
+  llmDialogClose.addEventListener("click", closeLLMConfigurationDialog);
+  llmDialogCancel.addEventListener("click", closeLLMConfigurationDialog);
+
+  llmForm.addEventListener("submit", async (event: Event) => {
+    event.preventDefault();
+    if (!activeLLMSetup) return;
+
+    llmDialogSave.disabled = true;
+    llmFormError.textContent = "";
+    try {
+      const response = await fetch("/api/llm/configurations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          configurationName: llmConfigurationName.value.trim(),
+          engineName: activeLLMSetup.engineName,
+          model: llmModel.value.trim(),
+          baseUrl: llmBaseUrl.value.trim() || undefined,
+          supportsPlanMode: llmPlanMode.checked,
+          supportsExecuteMode: llmExecuteMode.checked,
+        }),
+      });
+      const result = (await response.json()) as {
+        error?: string;
+        configuration?: { configurationName: string };
+      };
+      if (!response.ok) {
+        llmFormError.textContent =
+          result.error || "Configuration was not saved.";
+        return;
+      }
+
+      appendLog(
+        "USER_REPLY",
+        `LLM configuration "${result.configuration?.configurationName || llmConfigurationName.value}" saved.`,
+      );
+      closeLLMConfigurationDialog();
+    } catch (error) {
+      llmFormError.textContent = (error as Error).message;
+    } finally {
+      llmDialogSave.disabled = false;
+    }
+  });
 
   // Retry button click — removes the error entry and re-sends the same command
   logViewport.addEventListener("click", (e: MouseEvent) => {

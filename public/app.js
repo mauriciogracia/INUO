@@ -21,12 +21,27 @@ document.addEventListener("DOMContentLoaded", () => {
     const tabDebugEl = document.getElementById("tab-debug");
     const sendBtnText = document.getElementById("send-btn-text");
     const systemConnectedMsg = document.getElementById("system-connected-msg");
+    const llmDialog = document.getElementById("llm-config-dialog");
+    const llmForm = document.getElementById("llm-config-form");
+    const llmEngineName = document.getElementById("llm-engine-name");
+    const llmConfigurationName = document.getElementById("llm-configuration-name");
+    const llmModel = document.getElementById("llm-model");
+    const llmBaseUrl = document.getElementById("llm-base-url");
+    const llmPlanMode = document.getElementById("llm-plan-mode");
+    const llmExecuteMode = document.getElementById("llm-execute-mode");
+    const llmCredentialGuidance = document.getElementById("llm-credential-guidance");
+    const llmProviderDocs = document.getElementById("llm-provider-docs");
+    const llmFormError = document.getElementById("llm-form-error");
+    const llmDialogSave = document.getElementById("llm-dialog-save");
+    const llmDialogClose = document.getElementById("llm-dialog-close");
+    const llmDialogCancel = document.getElementById("llm-dialog-cancel");
     let activeTab = "conversation";
     let thinkingCount = 0;
     let debugCount = 0;
     let knownServerStartTime = null;
     let uiStrings = getStrings("es");
     let thinkingIndicator = null;
+    let activeLLMSetup = null;
     // 1. Tab Switching Handler
     tabBtns.forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -203,19 +218,58 @@ document.addEventListener("DOMContentLoaded", () => {
         logViewport.appendChild(entry);
         logViewport.scrollTop = logViewport.scrollHeight;
     }
+    function openLLMConfigurationDialog(setup) {
+        activeLLMSetup = setup;
+        llmEngineName.textContent = setup.engineName;
+        llmConfigurationName.value = setup.defaultConfigurationName;
+        llmModel.value = setup.defaultModel;
+        llmBaseUrl.value = setup.defaultBaseUrl ?? "";
+        llmPlanMode.checked = true;
+        llmExecuteMode.checked = false;
+        llmFormError.textContent = "";
+        if (setup.credentialEnvironmentVariable) {
+            llmCredentialGuidance.textContent =
+                `Set ${setup.credentialEnvironmentVariable} in the server environment. ` +
+                    "Credentials are never entered or stored in this form.";
+        }
+        else {
+            llmCredentialGuidance.textContent =
+                "This provider profile does not require a credential environment variable.";
+        }
+        if (setup.documentationUrl) {
+            llmProviderDocs.href = setup.documentationUrl;
+            llmProviderDocs.hidden = false;
+        }
+        else {
+            llmProviderDocs.removeAttribute("href");
+            llmProviderDocs.hidden = true;
+        }
+        llmDialog.showModal();
+        llmConfigurationName.focus();
+        llmConfigurationName.select();
+    }
+    function closeLLMConfigurationDialog() {
+        activeLLMSetup = null;
+        llmFormError.textContent = "";
+        llmDialog.close();
+        commandInput.focus();
+    }
     async function sendCommand(command) {
         try {
             const res = await fetch("/api/command", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ command }),
+                body: JSON.stringify({ command, uiMode: true }),
             });
+            const body = (await res.json().catch(() => ({})));
             if (!res.ok) {
-                const body = await res
-                    .json()
-                    .catch(() => ({ error: "Unknown server error" }));
                 appendLog("DEBUG", `[Command Error] HTTP ${res.status} — ${body.error ?? "Unknown"}`);
                 appendErrorWithRetry(uiStrings.errorServer, command);
+                return;
+            }
+            if (body.status === "input_required" &&
+                body.uiAction?.type === "LLM_CONFIGURATION") {
+                openLLMConfigurationDialog(body.uiAction.setup);
             }
         }
         catch (err) {
@@ -223,6 +277,43 @@ document.addEventListener("DOMContentLoaded", () => {
             appendErrorWithRetry(uiStrings.errorNetwork, command);
         }
     }
+    llmDialogClose.addEventListener("click", closeLLMConfigurationDialog);
+    llmDialogCancel.addEventListener("click", closeLLMConfigurationDialog);
+    llmForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!activeLLMSetup)
+            return;
+        llmDialogSave.disabled = true;
+        llmFormError.textContent = "";
+        try {
+            const response = await fetch("/api/llm/configurations", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    configurationName: llmConfigurationName.value.trim(),
+                    engineName: activeLLMSetup.engineName,
+                    model: llmModel.value.trim(),
+                    baseUrl: llmBaseUrl.value.trim() || undefined,
+                    supportsPlanMode: llmPlanMode.checked,
+                    supportsExecuteMode: llmExecuteMode.checked,
+                }),
+            });
+            const result = (await response.json());
+            if (!response.ok) {
+                llmFormError.textContent =
+                    result.error || "Configuration was not saved.";
+                return;
+            }
+            appendLog("USER_REPLY", `LLM configuration "${result.configuration?.configurationName || llmConfigurationName.value}" saved.`);
+            closeLLMConfigurationDialog();
+        }
+        catch (error) {
+            llmFormError.textContent = error.message;
+        }
+        finally {
+            llmDialogSave.disabled = false;
+        }
+    });
     // Retry button click — removes the error entry and re-sends the same command
     logViewport.addEventListener("click", (e) => {
         const btn = e.target.closest(".retry-btn");

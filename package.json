@@ -12,6 +12,7 @@
     "dev:web": "npm run build && node dist/scripts/devWatcher.js web 3000",
     "web": "npm run build && node bin/inuo.js web",
     "serve": "tsc && node dist/scripts/devWatcher.js",
+    "improvements:sync": "node scripts/sync-improvements.js",
     "pretest": "npm run build",
     "cli": "npm run build && node bin/inuo.js",
     "init": "npm run build && node bin/inuo.js init",

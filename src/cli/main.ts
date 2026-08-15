@@ -9,5 +9,5 @@ if (args[0] === "web" || args[0] === "server" || args[0] === "ui") {
 } else if (args.length === 0) {
   startInteractiveShell(process.cwd());
 } else {
-  dispatchSingleCommand(args, process.cwd());
+  void dispatchSingleCommand(args, process.cwd());
 }

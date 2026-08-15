@@ -146,3 +146,60 @@ $$\mathbf{Versión} = \mathbf{Desplegado.RevisiónDeEspecificación.Implementaci
 
 - **`SPEC_VERSION`**: `"00.03.70"`
 - **Estado de Sincronización**: Revisión 03 definida; implementación verificada al 70%.
+
+---
+
+## 8. Orquestación de Workflow por Nodos
+
+INUO soporta nodos de workflow configurables para enrutar ejecución por perfil de motor.
+
+### 8.1 Modelo de Nodo de Workflow
+
+Cada nodo de workflow **DEBE** persistir, como mínimo, los siguientes campos:
+
+- `nodeId`: identificador único del nodo.
+- `nodeName`: nombre lógico único dentro de la instancia.
+- `engineConfiguration`: nombre de configuración de motor/proveedor asociado al nodo.
+- `createdAt`: timestamp ISO de creación.
+- `updatedAt`: timestamp ISO de última actualización.
+
+### 8.2 Contrato de Comandos CLI (CRUD)
+
+El shell de INUO **DEBE** exponer los siguientes comandos para gestión de nodos de workflow:
+
+- `node add <nodeName> <engineConfiguration>`
+- `node list`
+- `node update <nodeName> <engineConfiguration>`
+- `node remove <nodeName>`
+
+Reglas mínimas de integridad:
+
+- `nodeName` debe ser único (sin distinción entre mayúsculas y minúsculas).
+- `node add` debe rechazar duplicados.
+- `node update` y `node remove` deben rechazar nombres inexistentes.
+- Todos los cambios deben persistirse en el estado local de INUO.
+
+---
+
+## 9. Configuración de Redes Sociales para Broadcast
+
+INUO soporta configuración explícita de redes sociales para el flujo de publicación multi-plataforma.
+
+### 9.1 Redes soportadas
+
+- `instagram`
+- `tiktok`
+- `facebook`
+- `linkedin`
+
+### 9.2 Contrato de Comandos `sn` (CRUD)
+
+- `sn add <network> <configurationName> [--account <handle>] [--enabled yes|no]`
+- `sn list`
+- `sn update <configurationName> [--network <network>] [--account <handle>] [--enabled yes|no]`
+- `sn remove <configurationName>`
+
+### 9.3 Integración con `social broadcast`
+
+- Si `social broadcast` no recibe `--platforms`, INUO **DEBE** usar las configuraciones `sn` habilitadas (`isEnabled=true`) como destino por defecto.
+- Si no existen configuraciones habilitadas, INUO **DEBE** responder con guía de configuración y no publicar.

@@ -24,3 +24,4 @@ export * from "./OperatingMode";
 export * from "./QuestionOptionType";
 export * from "./ResponseLength";
 export * from "./ResponseFormat";
+export * from "./SocialNetworkName";

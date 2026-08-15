@@ -104,6 +104,86 @@
       </footer>
     </div>
 
+    <dialog class="llm-dialog" id="llm-config-dialog">
+      <form class="llm-config-form" id="llm-config-form">
+        <header class="llm-dialog-header">
+          <div>
+            <span class="llm-dialog-eyebrow" id="llm-engine-name"></span>
+            <h2>Configure LLM provider</h2>
+          </div>
+          <button
+            type="button"
+            class="icon-btn"
+            id="llm-dialog-close"
+            aria-label="Close"
+            title="Close"
+          >
+            &times;
+          </button>
+        </header>
+
+        <div class="llm-form-body">
+          <label class="form-field">
+            <span>Configuration name</span>
+            <input
+              id="llm-configuration-name"
+              name="configurationName"
+              type="text"
+              pattern="[A-Za-z0-9][A-Za-z0-9._\-]{0,63}"
+              maxlength="64"
+              required
+            />
+          </label>
+
+          <label class="form-field">
+            <span>Model</span>
+            <input id="llm-model" name="model" type="text" required />
+          </label>
+
+          <label class="form-field">
+            <span>Base URL</span>
+            <input
+              id="llm-base-url"
+              name="baseUrl"
+              type="url"
+              placeholder="Provider default"
+            />
+          </label>
+
+          <fieldset class="capability-fieldset">
+            <legend>Supported modes</legend>
+            <label class="toggle-row">
+              <input id="llm-plan-mode" type="checkbox" checked />
+              <span>Plan</span>
+            </label>
+            <label class="toggle-row">
+              <input id="llm-execute-mode" type="checkbox" />
+              <span>Execute tools</span>
+            </label>
+          </fieldset>
+
+          <div class="credential-guidance" id="llm-credential-guidance"></div>
+          <a
+            class="provider-docs-link"
+            id="llm-provider-docs"
+            target="_blank"
+            rel="noreferrer"
+            >Provider setup documentation</a
+          >
+          <p class="form-error" id="llm-form-error" role="alert"></p>
+        </div>
+
+        <footer class="llm-dialog-actions">
+          <button type="button" class="secondary-btn" id="llm-dialog-cancel">
+            Cancel
+          </button>
+          <button type="submit" class="primary-btn" id="llm-dialog-save">
+            Save configuration
+          </button>
+        </footer>
+      </form>
+    </dialog>
+
     <script type="module" src="app.js"></script>
   </body>
 </html>

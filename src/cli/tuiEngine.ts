@@ -1,20 +1,27 @@
-import readline from 'readline';
-import { setOutputListener } from './outputRouter';
-import { OutputChannelEnum } from '../enums/OutputChannelEnum';
-import { getProjectPaths, loadState } from './context';
-import { getI18n } from '../i18n';
-import { OperatingModeConfig } from '../interfaces/OperatingModeConfig';
+import readline from "readline";
+import { setOutputListener } from "./outputRouter";
+import { OutputChannelEnum } from "../enums/OutputChannelEnum";
+import { getProjectPaths, loadState } from "./context";
+import { getI18n } from "../i18n";
+import { OperatingModeConfig } from "../interfaces/OperatingModeConfig";
+import { LLMConfigurationPrompter } from "../interfaces/LLMConfigurationPrompter";
 
 export interface TUIRenderContext {
   version: string;
   rootDir: string;
-  onCommand: (command: string) => Promise<void>;
+  onCommand: (
+    command: string,
+    prompter?: LLMConfigurationPrompter,
+  ) => Promise<void>;
 }
 
 export class INUOTerminalUI {
   private version: string;
   private rootDir: string;
-  private onCommand: (command: string) => Promise<void>;
+  private onCommand: (
+    command: string,
+    prompter?: LLMConfigurationPrompter,
+  ) => Promise<void>;
   private logBuffer: string[] = [];
   private rl: readline.Interface | null = null;
   private isActive: boolean = false;
@@ -35,12 +42,12 @@ export class INUOTerminalUI {
     });
 
     // Handle terminal resize
-    process.stdout.on('resize', () => {
+    process.stdout.on("resize", () => {
       this.renderScreen();
     });
 
     // Clear screen
-    process.stdout.write('\x1b[2J\x1b[3J\x1b[H');
+    process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
 
     // Render static frame
     this.renderFrame();
@@ -50,7 +57,7 @@ export class INUOTerminalUI {
   }
 
   private addLog(channel: OutputChannelEnum, content: string): void {
-    const formattedLines = content.split('\n');
+    const formattedLines = content.split("\n");
     for (const line of formattedLines) {
       if (!line) continue;
       switch (channel) {
@@ -95,11 +102,23 @@ export class INUOTerminalUI {
 
     this.rl.prompt();
 
-    this.rl.on('line', async (line: string) => {
+    this.rl.on("line", async (line: string) => {
       const input = line.trim();
       if (input) {
-        this.addLog(OutputChannelEnum.USER_REPLY, `\x1b[32minuo (v${this.version})\x1b[0m > ${input}`);
-        await this.onCommand(input);
+        this.addLog(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[32minuo (v${this.version})\x1b[0m > ${input}`,
+        );
+        const prompter: LLMConfigurationPrompter = {
+          ask: (question, defaultValue) =>
+            new Promise((resolve) => {
+              const suffix = defaultValue ? ` [${defaultValue}]` : "";
+              this.rl?.question(`${question}${suffix}: `, (answer) => {
+                resolve(answer.trim() || defaultValue || "");
+              });
+            }),
+        };
+        await this.onCommand(input, prompter);
       }
 
       // Re-position cursor to prompt row after command
@@ -111,12 +130,15 @@ export class INUOTerminalUI {
     });
 
     // Handle CONTROL+C (SIGINT) to cancel active prompt line
-    this.rl.on('SIGINT', () => {
-      const activeLine = this.rl ? (this.rl as any).line || '' : '';
+    this.rl.on("SIGINT", () => {
+      const activeLine = this.rl ? (this.rl as any).line || "" : "";
       if (activeLine.trim().length > 0) {
-        this.addLog(OutputChannelEnum.USER_REPLY, `\x1b[33m^C [Prompt Cancelled]\x1b[0m`);
+        this.addLog(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[33m^C [Prompt Cancelled]\x1b[0m`,
+        );
         if (this.rl) {
-          (this.rl as any).line = '';
+          (this.rl as any).line = "";
           (this.rl as any).cursor = 0;
           const updatedRows = process.stdout.rows || 24;
           process.stdout.write(`\x1b[${updatedRows - 1};1H\x1b[2K`);
@@ -125,14 +147,13 @@ export class INUOTerminalUI {
       } else {
         const paths = getProjectPaths(this.rootDir);
         const state = loadState(paths.statePath);
-        const lang = state.operatingMode?.detectedLanguage || 'es';
+        const lang = state.operatingMode?.detectedLanguage || "es";
         const dict = getI18n(lang);
         console.log(`\n\x1b[33m${dict.farewell}\x1b[0m\n`);
         process.exit(0);
       }
     });
   }
-
 
   private renderFrame(): void {
     const rows = process.stdout.rows || 24;
@@ -141,28 +162,31 @@ export class INUOTerminalUI {
     const paths = getProjectPaths(this.rootDir);
     const state = loadState(paths.statePath);
     const modeConfig: OperatingModeConfig = state.operatingMode || {
-      currentMode: 'promptMe',
-      detectedLanguage: 'en',
+      currentMode: "promptMe",
+      detectedLanguage: "en",
       autoDetectLanguage: true,
       authRequiredOnStart: false,
       updatedAt: new Date().toISOString(),
     };
 
-    const lang = modeConfig.detectedLanguage || 'en';
+    const lang = modeConfig.detectedLanguage || "en";
     const dict = getI18n(lang);
-    const modeName = modeConfig.currentMode || 'promptMe';
-    const succinctStr = modeConfig.isSuccinctMode !== false ? 'ON' : 'OFF';
-    const debugLvl = modeConfig.debugLevel !== undefined ? modeConfig.debugLevel : 1;
+    const modeName = modeConfig.currentMode || "promptMe";
+    const succinctStr = modeConfig.isSuccinctMode !== false ? "ON" : "OFF";
+    const debugLvl =
+      modeConfig.debugLevel !== undefined ? modeConfig.debugLevel : 1;
 
     // 1. Draw Top Header Status Bar (Rows 1..3)
     let header = `\x1b[1;1H\x1b[2K\x1b[44m\x1b[37m\x1b[1m === ${dict.shellBanner.title} (v${this.version}) === \x1b[0m\n`;
     header += `\x1b[2;1H\x1b[2K\x1b[36m[Mode: ${modeName}]\x1b[0m | \x1b[33m[Lang: ${lang.toUpperCase()}]\x1b[0m | \x1b[32m[Succinct: ${succinctStr}]\x1b[0m | \x1b[35m[Debug: ${debugLvl}]\x1b[0m\n`;
-    header += `\x1b[3;1H\x1b[2K\x1b[90m${'─'.repeat(cols)}\x1b[0m`;
+    header += `\x1b[3;1H\x1b[2K\x1b[90m${"─".repeat(cols)}\x1b[0m`;
     process.stdout.write(header);
 
     // 2. Draw Bottom Separator (Row rows-2)
     const sepRow = rows - 2;
-    process.stdout.write(`\x1b[${sepRow};1H\x1b[2K\x1b[90m${'─'.repeat(cols)}\x1b[0m`);
+    process.stdout.write(
+      `\x1b[${sepRow};1H\x1b[2K\x1b[90m${"─".repeat(cols)}\x1b[0m`,
+    );
   }
 
   private renderLogsSafely(): void {
@@ -173,20 +197,20 @@ export class INUOTerminalUI {
     const visibleLogs = this.logBuffer.slice(-logViewportHeight);
 
     // Save active cursor position (where user is typing)
-    process.stdout.write('\x1b[s');
+    process.stdout.write("\x1b[s");
 
     for (let i = 0; i < logViewportHeight; i++) {
       const targetRow = logStartRow + i;
-      const logLine = visibleLogs[i] || '';
+      const logLine = visibleLogs[i] || "";
       process.stdout.write(`\x1b[${targetRow};1H\x1b[2K${logLine}`);
     }
 
     // Restore cursor position back to active readline prompt
-    process.stdout.write('\x1b[u');
+    process.stdout.write("\x1b[u");
   }
 
   private renderScreen(): void {
-    process.stdout.write('\x1b[2J\x1b[3J\x1b[H');
+    process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
     this.renderFrame();
     this.renderLogsSafely();
   }

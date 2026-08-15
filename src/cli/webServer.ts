@@ -9,6 +9,12 @@ import { getProjectPaths, loadState } from "./context";
 import { OperatingModeConfig } from "../interfaces/OperatingModeConfig";
 import { TOOL_NAME, TOOL_PROMPT } from "./brand";
 import { getSessionStats } from "./usageEngine";
+import {
+  deleteLLMConfiguration,
+  getLLMConfigurations,
+  getLLMProviderSetup,
+  saveLLMConfiguration,
+} from "./llmCommand";
 
 export interface WebServerOptions {
   port?: number;
@@ -16,7 +22,7 @@ export interface WebServerOptions {
 }
 
 export function startWebServer(options: WebServerOptions = {}): http.Server {
-  const port = options.port || 3000;
+  const port = options.port ?? 3000;
   const rootDir = options.rootDir || process.cwd();
   const sseClients: Response[] = [];
   // Unique token per process start — browsers compare this to detect restarts
@@ -104,6 +110,56 @@ export function startWebServer(options: WebServerOptions = {}): http.Server {
     });
   });
 
+  app.get("/api/llm/configurations", (req: Request, res: Response) => {
+    res.json({ configurations: getLLMConfigurations(rootDir) });
+  });
+
+  app.post("/api/llm/configurations", (req: Request, res: Response) => {
+    try {
+      const forbiddenField = Object.keys(req.body || {}).find((key) =>
+        /api.?key|secret|token|password|credential/i.test(key),
+      );
+      if (forbiddenField) {
+        res.status(400).json({
+          error: `Secret field "${forbiddenField}" is not accepted. Configure credentials in the provider environment.`,
+        });
+        return;
+      }
+
+      const configuration = saveLLMConfiguration(
+        {
+          configurationName: String(req.body.configurationName || ""),
+          engineName: String(req.body.engineName || ""),
+          model: String(req.body.model || ""),
+          baseUrl: req.body.baseUrl ? String(req.body.baseUrl) : undefined,
+          supportsPlanMode: req.body.supportsPlanMode === true,
+          supportsExecuteMode: req.body.supportsExecuteMode === true,
+        },
+        rootDir,
+      );
+      res.status(201).json({ status: "created", configuration });
+    } catch (error) {
+      const message = (error as Error).message;
+      res.status(message.includes("already exists") ? 409 : 400).json({
+        error: message,
+      });
+    }
+  });
+
+  app.delete(
+    "/api/llm/configurations/:configurationName",
+    (req: Request, res: Response) => {
+      const configurationName = req.params.configurationName;
+      if (!deleteLLMConfiguration(configurationName, rootDir)) {
+        res.status(404).json({
+          error: `LLM configuration "${configurationName}" not found.`,
+        });
+        return;
+      }
+      res.json({ status: "removed", configurationName });
+    },
+  );
+
   // Command Execution POST Endpoint
   app.post("/api/command", async (req: Request, res: Response) => {
     try {
@@ -116,6 +172,18 @@ export function startWebServer(options: WebServerOptions = {}): http.Server {
         });
         for (const client of sseClients) {
           client.write(`data: ${payload}\n\n`);
+        }
+
+        const interactiveAdd = /^llm\s+add\s+([A-Za-z0-9._-]+)$/i.exec(command);
+        if (req.body.uiMode === true && interactiveAdd) {
+          res.json({
+            status: "input_required",
+            uiAction: {
+              type: "LLM_CONFIGURATION",
+              setup: getLLMProviderSetup(interactiveAdd[1]),
+            },
+          });
+          return;
         }
 
         await executeShellLine(command, rootDir);
@@ -135,13 +203,16 @@ export function startWebServer(options: WebServerOptions = {}): http.Server {
   const server = http.createServer(app);
   server.listen(port, () => {
     const inuoVer = calculateInuoVersion(rootDir);
+    const address = server.address();
+    const activePort =
+      typeof address === "object" && address ? address.port : port;
     console.log(
       "\x1b[32m%s\x1b[0m",
-      `\n🚀 [INUO Express Web Server] Light Web UI active at http://localhost:${port}`,
+      `\n🚀 [INUO Express Web Server] Light Web UI active at http://localhost:${activePort}`,
     );
     console.log(
       "\x1b[36m%s\x1b[0m",
-      `   Version: v${inuoVer.fullVersionString} | SSE Stream: http://localhost:${port}/api/stream\n`,
+      `   Version: v${inuoVer.fullVersionString} | SSE Stream: http://localhost:${activePort}/api/stream\n`,
     );
   });
 

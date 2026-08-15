@@ -103,11 +103,44 @@ npm test
 | `offer list`                       | List active Offers                                                                             |
 | `offer create --verb V --object O` | Create a new Offer object                                                                      |
 | `match`                            | Run matching engine to pair open Needs with Offers                                             |
+| `llm add <engineName>`             | Interactively add a non-secret LLM provider profile                                            |
+| `llm list`                         | List saved LLM provider profiles                                                               |
+| `llm status`                       | Show LLM profile summary by engine and plan/execute capability                                 |
+| `llm remove <configurationName>`   | Remove an LLM provider profile                                                                 |
 | `test [version]`                   | Execute specification version and file structure verification                                  |
 | `rollback <version>`               | Rollback `SPEC_VERSION` to a previous version snapshot                                         |
 | `<Natural Language>`               | AI automatically parses intent & instantiates Need/Offer                                       |
 | `help`                             | Display command guide                                                                          |
 | `exit` / `quit`                    | Exit the interactive shell                                                                     |
+
+---
+
+## LLM Provider Profiles
+
+The interactive shell prompts for a unique configuration name, model, optional base URL,
+and plan/execute support. It never requests or stores an API key.
+
+External callers can provide the same non-secret values without prompts:
+
+```bash
+inuo llm add gemini --name planner-primary --model gemini-3.6-flash --plan yes --execute no
+inuo llm add copilot --name copilot-default --model gpt-4.1 --plan yes --execute yes
+inuo llm status
+inuo llm remove planner-primary
+```
+
+The web API provides equivalent structured operations:
+
+```text
+GET    /api/llm/configurations
+POST   /api/llm/configurations
+DELETE /api/llm/configurations/:configurationName
+```
+
+Browser command requests send `uiMode: true`; `llm add <engineName>` then opens the
+configuration modal. Complete flag-based commands continue to execute directly. Provider
+credentials must be configured in the server environment using the environment-variable
+name shown by INUO.
 
 ---
 

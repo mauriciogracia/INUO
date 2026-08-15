@@ -65,10 +65,18 @@ import { runGCCommand } from "./gcCommand";
 import { TOOL_NAME, TOOL_CMD } from "./brand";
 import { handleFormatSignal } from "./preferenceEngine";
 import { runAiCommand } from "./aiCommand";
+import {
+  createTerminalLLMConfigurationPrompter,
+  runLLMCommand,
+} from "./llmCommand";
+import { LLMConfigurationPrompter } from "../interfaces/LLMConfigurationPrompter";
+import { runNodeCommand } from "./nodeCommand";
+import { runSNCommand } from "./snCommand";
 
 export async function executeShellLine(
   trimmed: string,
   rootDir: string = process.cwd(),
+  llmPrompter?: LLMConfigurationPrompter,
 ): Promise<void> {
   if (!trimmed) return;
 
@@ -91,6 +99,10 @@ export async function executeShellLine(
 
     case "social":
       runSocialCommand(parts.slice(1), rootDir);
+      break;
+
+    case "sn":
+      runSNCommand(parts.slice(1), rootDir);
       break;
 
     case "mode":
@@ -181,6 +193,14 @@ export async function executeShellLine(
 
     case "mcp":
       runMCPCommand(parts.slice(1), rootDir);
+      break;
+
+    case "llm":
+      await runLLMCommand(parts.slice(1), rootDir, llmPrompter);
+      break;
+
+    case "node":
+      runNodeCommand(parts.slice(1), rootDir);
       break;
 
     case "colmena":
@@ -300,7 +320,7 @@ export async function executeShellLine(
     case "help":
       writeOutput(
         OutputChannelEnum.USER_REPLY,
-        `${TOOL_NAME} Supported Commands:\nneed create, offer create, match, detail, answer, status, catalog, version, mode, succinct, debug, auth, exit`,
+        `${TOOL_NAME} Supported Commands:\nneed create, offer create, match, detail, answer, llm add/list/remove/status, node add/list/update/remove, sn add/list/update/remove, social broadcast, status, catalog, version, mode, succinct, debug, auth, exit`,
       );
       break;
 
@@ -408,7 +428,7 @@ export async function executeShellLine(
             writeOutput(OutputChannelEnum.USER_REPLY, result.explanation);
           }
           for (const cmdLine of seq) {
-            await executeShellLine(cmdLine, rootDir);
+            await executeShellLine(cmdLine, rootDir, llmPrompter);
           }
         } else if (result.type === "NEED" && result.verb && result.object) {
           writeOutput(
@@ -484,19 +504,28 @@ export function startInteractiveShell(rootDir: string = process.cwd()): void {
   const tui = new INUOTerminalUI({
     version,
     rootDir,
-    onCommand: async (cmd: string) => {
-      await executeShellLine(cmd, rootDir);
+    onCommand: async (cmd: string, prompter?: LLMConfigurationPrompter) => {
+      await executeShellLine(cmd, rootDir, prompter);
     },
   });
 
   tui.start();
 }
 
-export function dispatchSingleCommand(
+export async function dispatchSingleCommand(
   args: string[],
   rootDir: string = process.cwd(),
-): void {
+): Promise<void> {
   checkAndApplySyncProtocol(rootDir);
   const line = args.join(" ");
-  executeShellLine(line, rootDir);
+  const needsPrompter =
+    args[0]?.toLowerCase() === "llm" && args[1]?.toLowerCase() === "add";
+  const prompter = needsPrompter
+    ? createTerminalLLMConfigurationPrompter()
+    : undefined;
+  try {
+    await executeShellLine(line, rootDir, prompter);
+  } finally {
+    prompter?.close?.();
+  }
 }
