@@ -33,6 +33,8 @@ export * from "./StorageHealthState";
 export * from "./PreferenceScope";
 export * from "./IntegrationCategory";
 export * from "./IntegrationAuthType";
+export * from "./ConflictResolutionTier";
+
 
 
 

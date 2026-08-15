@@ -151,10 +151,16 @@ export function runSelectiveSyncCommand(args: string[], rootDir: string = proces
   if (workflowId) console.log(`  • Workflow Filter: ${workflowId}`);
   if (isLightweight) console.log(`  • Lightweight Mode: ACTIVE (Compact payload, binary logs excluded)`);
 
-  // Autonomous state delta resolution
+  // Autonomous state delta resolution & journal draining
+  const { drainSyncJournalQueue } = require('./conflictResolutionEngine');
+  const journalResult = drainSyncJournalQueue(rootDir);
   console.log(`  • State Analysis: Comparing local timestamp vectors vs ${targetChannel}...`);
+  if (journalResult.drainedCount > 0) {
+    console.log(`  • Drained Offline Journal: ${journalResult.drainedCount} pending mutation(s) committed.`);
+  }
   console.log('\x1b[32m%s\x1b[0m', `✔ [Autonomous Sync Complete] Delta reconciled. Local and remote entities (${entities.join(', ')}) are fully synchronized.`);
 }
+
 
 export function getAutoSyncConfig(rootDir: string = process.cwd()): {
   intervalMinutes: number;
