@@ -8,6 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const modeSelect = document.getElementById("mode-select");
     const statusSuccinctEl = document.getElementById("status-succinct");
     const statusDebugEl = document.getElementById("status-debug");
+    const statusAiEl = document.getElementById("status-ai");
+    const labelAiEl = document.getElementById("label-ai");
     const badgeThinking = document.getElementById("badge-thinking");
     const badgeDebug = document.getElementById("badge-debug");
     const tabBtns = document.querySelectorAll(".tab-btn");
@@ -65,6 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
         labelMode.textContent = uiStrings.pillMode;
         labelSuccinct.textContent = uiStrings.pillSuccinct;
         labelDebugEl.textContent = uiStrings.pillDebug;
+        labelAiEl.textContent = uiStrings.pillAi;
         sendBtnText.textContent = uiStrings.send;
         commandInput.placeholder = uiStrings.placeholder;
         systemConnectedMsg.textContent = uiStrings.connected;
@@ -83,6 +86,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 applyTranslations(data.lang);
                 statusSuccinctEl.textContent = data.succinct ? "ON" : "OFF";
                 statusDebugEl.textContent = `Level ${data.debugLevel}`;
+                if (data.aiUsage) {
+                    const t = data.aiUsage.totalTokens;
+                    const label = t >= 1000000
+                        ? `${(t / 1000000).toFixed(1)}M tk`
+                        : t >= 1000
+                            ? `${(t / 1000).toFixed(1)}k tk`
+                            : t > 0 ? `${t} tk` : `${data.aiUsage.requestCount} req`;
+                    statusAiEl.textContent = label;
+                }
             }
         }
         catch (err) {

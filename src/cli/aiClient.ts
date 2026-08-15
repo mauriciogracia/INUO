@@ -4,7 +4,7 @@ import { getProjectPaths, loadState } from "./context";
 import { writeOutput } from "./outputRouter";
 import { OutputChannelEnum } from "../enums/OutputChannelEnum";
 import { getPreference, buildPreferencePromptBlock } from "./preferenceEngine";
-
+import { recordUsage } from "./usageEngine";
 export interface ParsedIntentResult {
   type:
     | "NEED"
@@ -174,6 +174,19 @@ Return ONLY a raw JSON object with NO markdown formatting matching this structur
     });
 
     const text = response.text?.trim() || "";
+    const meta = (response as any).usageMetadata;
+    if (meta) {
+      recordUsage(
+        {
+          model: env.defaultModel,
+          command: userInput.slice(0, 80),
+          inputTokens: meta.promptTokenCount ?? 0,
+          outputTokens: meta.candidatesTokenCount ?? 0,
+          timestamp: new Date().toISOString(),
+        },
+        rootDir,
+      );
+    }
     const cleanJson = text
       .replace(/```json/g, "")
       .replace(/```/g, "")

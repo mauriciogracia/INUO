@@ -64,6 +64,7 @@ import { INUOTerminalUI } from "./tuiEngine";
 import { runGCCommand } from "./gcCommand";
 import { TOOL_NAME, TOOL_CMD } from "./brand";
 import { handleFormatSignal } from "./preferenceEngine";
+import { runAiCommand } from "./aiCommand";
 
 export async function executeShellLine(
   trimmed: string,
@@ -251,6 +252,10 @@ export async function executeShellLine(
     case "chrome":
     case "browser":
       runGCCommand(3000, rootDir);
+      break;
+
+    case "ai":
+      runAiCommand(parts.slice(1), rootDir);
       break;
 
     case "catalog":

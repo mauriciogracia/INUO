@@ -5,6 +5,7 @@ export interface WebUiStrings {
   pillMode: string;
   pillSuccinct: string;
   pillDebug: string;
+  pillAi: string;
   send: string;
   placeholder: string;
   thinking: string;
@@ -24,8 +25,9 @@ const strings: Record<string, WebUiStrings> = {
     pillMode: "Modo:",
     pillSuccinct: "Conciso:",
     pillDebug: "Nivel:",
+    pillAi: "AI:",
     send: "Enviar",
-    placeholder:  'Hola · Hello · Bonjour · Hallo · Olá',
+    placeholder: "Hola · Hello · Bonjour · Hallo · Olá",
     thinking: "Pensando",
     thinkingHint: "ver detalles en",
     connected: "🚀 iNoU conectado. Flujo SSE en tiempo real activo.",
@@ -43,8 +45,9 @@ const strings: Record<string, WebUiStrings> = {
     pillMode: "Mode:",
     pillSuccinct: "Succinct:",
     pillDebug: "Level:",
+    pillAi: "AI:",
     send: "Send",
-    placeholder:  'Hola · Hello · Bonjour · Hallo · Olá',
+    placeholder: "Hola · Hello · Bonjour · Hallo · Olá",
     thinking: "Thinking",
     thinkingHint: "see details in",
     connected: "🚀 iNoU Web UI connected. Real-time SSE stream active.",
@@ -62,8 +65,9 @@ const strings: Record<string, WebUiStrings> = {
     pillMode: "Modus:",
     pillSuccinct: "Kompakt:",
     pillDebug: "Stufe:",
+    pillAi: "KI:",
     send: "Senden",
-    placeholder:  'Hola · Hello · Bonjour · Hallo · Olá',
+    placeholder: "Hola · Hello · Bonjour · Hallo · Olá",
     thinking: "Denkend",
     thinkingHint: "Details in",
     connected: "🚀 iNoU Web UI verbunden. Echtzeit-SSE-Stream aktiv.",
@@ -81,8 +85,9 @@ const strings: Record<string, WebUiStrings> = {
     pillMode: "Mode :",
     pillSuccinct: "Succinct :",
     pillDebug: "Niveau :",
+    pillAi: "IA :",
     send: "Envoyer",
-    placeholder:  'Hola · Hello · Bonjour · Hallo · Olá',
+    placeholder: "Hola · Hello · Bonjour · Hallo · Olá",
     thinking: "Réflexion",
     thinkingHint: "voir les détails dans",
     connected: "🚀 iNoU Web UI connecté. Flux SSE en temps réel actif.",
@@ -100,8 +105,9 @@ const strings: Record<string, WebUiStrings> = {
     pillMode: "Modo:",
     pillSuccinct: "Sucinto:",
     pillDebug: "Nível:",
+    pillAi: "IA:",
     send: "Enviar",
-    placeholder:  'Hola · Hello · Bonjour · Hallo · Olá',
+    placeholder: "Hola · Hello · Bonjour · Hallo · Olá",
     thinking: "Pensando",
     thinkingHint: "ver detalhes em",
     connected: "🚀 iNoU Web UI conectado. Fluxo SSE em tempo real ativo.",

@@ -51,3 +51,5 @@ export * from "./InuoVersionSpec";
 export * from "./MasterMindSyncProgress";
 export * from "./I18nDictionary";
 export * from "./UserPreferenceProfile";
+export * from "./AiUsageRecord";
+export * from "./AiUsageSummary";

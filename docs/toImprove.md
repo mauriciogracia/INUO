@@ -112,6 +112,7 @@ are available to other nodes — enabling shared style conventions across a Colm
 - Decay old signals over time (lower `signalCount` weight after N sessions).
 
 ---
+
 ---
 
 # AI Usage Tracking
@@ -129,14 +130,14 @@ are to a self-imposed limit.
 ```ts
 // src/interfaces/AiUsageRecord.ts
 export interface AiUsageRecord {
-  id: string;            // unique record ID
-  providerId: string;    // e.g. "gemini-primary"
-  model: string;         // e.g. "gemini-3.6-flash"
-  command: string;       // shell command or intent type that triggered the call
+  id: string; // unique record ID
+  providerId: string; // e.g. "gemini-primary"
+  model: string; // e.g. "gemini-3.6-flash"
+  command: string; // shell command or intent type that triggered the call
   inputTokens: number;
   outputTokens: number;
   estimatedCostUsd: number;
-  timestamp: string;     // ISO
+  timestamp: string; // ISO
 }
 ```
 
@@ -153,8 +154,8 @@ export interface AiUsageSummary {
   totalTokens: number;
   estimatedCostUsd: number;
   budgetLimitUsd?: number;
-  budgetUsedPct?: number;   // 0–100, only present when budgetLimitUsd is set
-  periodStart: string;      // ISO — start of tracked window
+  budgetUsedPct?: number; // 0–100, only present when budgetLimitUsd is set
+  periodStart: string; // ISO — start of tracked window
 }
 ```
 
@@ -222,6 +223,7 @@ or the total token count when no limit is configured.
 Updates via the existing `/api/status` response — add `aiUsage` field.
 
 ---
+
 ---
 
 # Multi-AI Provider Configuration
@@ -238,7 +240,12 @@ between them without touching source code.
 
 ```ts
 // src/types/AIProvider.ts
-export type AIProvider = 'gemini' | 'openai' | 'anthropic' | 'ollama' | 'custom';
+export type AIProvider =
+  | "gemini"
+  | "openai"
+  | "anthropic"
+  | "ollama"
+  | "custom";
 ```
 
 ### New Interface — `AIProviderConfig`
@@ -246,16 +253,16 @@ export type AIProvider = 'gemini' | 'openai' | 'anthropic' | 'ollama' | 'custom'
 ```ts
 // src/interfaces/AIProviderConfig.ts
 export interface AIProviderConfig {
-  id: string;                       // e.g. "gemini-primary"
+  id: string; // e.g. "gemini-primary"
   provider: AIProvider;
-  model: string;                    // e.g. "gemini-3.6-flash", "gpt-4o", "claude-sonnet-4-5"
-  apiKeyRef: string;                // key name in .inuo-key.json, not the key itself
-  isActive: boolean;                // only one provider active at a time
-  baseUrl?: string;                 // for Ollama / custom OpenAI-compatible endpoints
-  costPerInputToken: number;        // USD per token
-  costPerOutputToken: number;       // USD per token
-  tokenBudgetLimit?: number;        // soft budget in USD; triggers warnings at 80%
-  capabilities: AICapability[];     // what this provider supports
+  model: string; // e.g. "gemini-3.6-flash", "gpt-4o", "claude-sonnet-4-5"
+  apiKeyRef: string; // key name in .inuo-key.json, not the key itself
+  isActive: boolean; // only one provider active at a time
+  baseUrl?: string; // for Ollama / custom OpenAI-compatible endpoints
+  costPerInputToken: number; // USD per token
+  costPerOutputToken: number; // USD per token
+  tokenBudgetLimit?: number; // soft budget in USD; triggers warnings at 80%
+  capabilities: AICapability[]; // what this provider supports
   addedAt: string;
 }
 ```
@@ -265,11 +272,11 @@ export interface AIProviderConfig {
 ```ts
 // src/types/AICapability.ts
 export type AICapability =
-  | 'intent-classification'
-  | 'decomposition'
-  | 'self-awareness-synthesis'
-  | 'evolve'
-  | 'embedding';
+  | "intent-classification"
+  | "decomposition"
+  | "self-awareness-synthesis"
+  | "evolve"
+  | "embedding";
 ```
 
 ### StateData additions
@@ -285,6 +292,7 @@ of the active `AIProviderConfig`.
 ### Provider-agnostic call layer
 
 Extract an `invokeAI(prompt, rootDir)` function in `aiClient.ts` that:
+
 1. Reads the active `AIProviderConfig` from state.
 2. Dispatches to the correct client adapter (`geminiAdapter`, `openaiAdapter`, `anthropicAdapter`, `ollamaAdapter`).
 3. Returns a normalised `{ text: string; inputTokens: number; outputTokens: number }`.
@@ -319,14 +327,14 @@ agent generate all                     — all three above
 
 #### `AGENTS.md` content sourced from state
 
-| Section | Source |
-|---|---|
-| Core Rules Reference | active `Principle[]` (immutable first) |
-| Interaction Formula | canonical formula from `INUO_SPEC.md` |
-| Verb Catalog | `customVerbs[]` + baseline verbs |
-| Governance Engines | `engines[]` |
-| Skill Registry | `skills[]` |
-| Trust & Safety | trust threshold gates + zero-tolerance principle |
+| Section              | Source                                           |
+| -------------------- | ------------------------------------------------ |
+| Core Rules Reference | active `Principle[]` (immutable first)           |
+| Interaction Formula  | canonical formula from `INUO_SPEC.md`            |
+| Verb Catalog         | `customVerbs[]` + baseline verbs                 |
+| Governance Engines   | `engines[]`                                      |
+| Skill Registry       | `skills[]`                                       |
+| Trust & Safety       | trust threshold gates + zero-tolerance principle |
 
 #### `copilot-instructions.md` content
 
@@ -335,16 +343,16 @@ window consumption (≤ 400 tokens target).
 
 ### Implementation Files
 
-| File | Role |
-|---|---|
-| `src/types/AIProvider.ts` | Provider identifier union |
-| `src/types/AICapability.ts` | Capability tags |
-| `src/interfaces/AIProviderConfig.ts` | Per-provider configuration |
-| `src/interfaces/AiUsageRecord.ts` | Single LLM call record |
-| `src/interfaces/AiUsageSummary.ts` | Aggregated usage summary |
-| `src/cli/usageEngine.ts` | Record · summarise · format · reset |
-| `src/cli/aiClient.ts` | Capture `usageMetadata` after every call; dispatch via provider |
-| `src/cli/agentGenerateCommand.ts` | `agent generate` subcommands |
-| `src/cli/shell.ts` | Register `ai` and `agent` commands |
-| `public/index.html` + `browser/app.ts` | Add `usage-pill` to header |
-| `src/cli/webServer.ts` | Expose `aiUsage` in `/api/status` response |
+| File                                   | Role                                                            |
+| -------------------------------------- | --------------------------------------------------------------- |
+| `src/types/AIProvider.ts`              | Provider identifier union                                       |
+| `src/types/AICapability.ts`            | Capability tags                                                 |
+| `src/interfaces/AIProviderConfig.ts`   | Per-provider configuration                                      |
+| `src/interfaces/AiUsageRecord.ts`      | Single LLM call record                                          |
+| `src/interfaces/AiUsageSummary.ts`     | Aggregated usage summary                                        |
+| `src/cli/usageEngine.ts`               | Record · summarise · format · reset                             |
+| `src/cli/aiClient.ts`                  | Capture `usageMetadata` after every call; dispatch via provider |
+| `src/cli/agentGenerateCommand.ts`      | `agent generate` subcommands                                    |
+| `src/cli/shell.ts`                     | Register `ai` and `agent` commands                              |
+| `public/index.html` + `browser/app.ts` | Add `usage-pill` to header                                      |
+| `src/cli/webServer.ts`                 | Expose `aiUsage` in `/api/status` response                      |

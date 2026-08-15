@@ -19,6 +19,8 @@ document.addEventListener("DOMContentLoaded", () => {
     "status-succinct",
   ) as HTMLElement;
   const statusDebugEl = document.getElementById("status-debug") as HTMLElement;
+  const statusAiEl = document.getElementById("status-ai") as HTMLElement;
+  const labelAiEl = document.getElementById("label-ai") as HTMLElement;
   const badgeThinking = document.getElementById(
     "badge-thinking",
   ) as HTMLElement;
@@ -43,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
     lang: string;
     succinct: boolean;
     debugLevel: number;
+    aiUsage?: { requestCount: number; totalTokens: number };
   }
 
   interface SsePayload {
@@ -98,6 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
     labelMode.textContent = uiStrings.pillMode;
     labelSuccinct.textContent = uiStrings.pillSuccinct;
     labelDebugEl.textContent = uiStrings.pillDebug;
+    labelAiEl.textContent = uiStrings.pillAi;
     sendBtnText.textContent = uiStrings.send;
     commandInput.placeholder = uiStrings.placeholder;
     systemConnectedMsg.textContent = uiStrings.connected;
@@ -117,6 +121,18 @@ document.addEventListener("DOMContentLoaded", () => {
         applyTranslations(data.lang);
         statusSuccinctEl.textContent = data.succinct ? "ON" : "OFF";
         statusDebugEl.textContent = `Level ${data.debugLevel}`;
+        if (data.aiUsage) {
+          const t = data.aiUsage.totalTokens;
+          const label =
+            t >= 1_000_000
+              ? `${(t / 1_000_000).toFixed(1)}M tk`
+              : t >= 1_000
+                ? `${(t / 1_000).toFixed(1)}k tk`
+                : t > 0
+                  ? `${t} tk`
+                  : `${data.aiUsage.requestCount} req`;
+          statusAiEl.textContent = label;
+        }
       }
     } catch (err) {
       console.error("Status fetch error:", err);
