@@ -9,8 +9,8 @@
   --accent-amber: #fbbf24;
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 
 * {
@@ -123,6 +123,56 @@ body {
   color: #fff;
 }
 
+/* Viewport Navigation Tabs */
+.view-tabs {
+  display: flex;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 8px 24px 0 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tab-btn {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 16px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+  color: var(--text-main);
+}
+
+.tab-btn.active {
+  color: var(--accent-cyan);
+  border-bottom-color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.tab-badge {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-family: var(--font-mono);
+}
+
+.tab-btn.active .tab-badge {
+  background: rgba(56, 189, 248, 0.2);
+  color: var(--accent-cyan);
+}
+
 /* Log Viewport */
 .log-viewport {
   flex: 1;
@@ -134,7 +184,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.03), transparent 40%);
+  background: radial-gradient(
+    circle at top right,
+    rgba(56, 189, 248, 0.03),
+    transparent 40%
+  );
 }
 
 .log-entry {
@@ -146,8 +200,14 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .log-entry.user-cmd {
@@ -237,7 +297,9 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  transition: transform 0.1s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.2s ease;
 }
 
 .send-btn:hover {
@@ -247,4 +309,102 @@ body {
 
 .send-btn:active {
   transform: translateY(0);
+}
+
+/* Error log entries with inline retry */
+.log-entry.error-msg {
+  background: rgba(251, 191, 36, 0.08);
+  border-left: 3px solid var(--accent-amber);
+  color: #fef3c7;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.error-text {
+  flex: 1;
+}
+
+.retry-btn {
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  color: var(--accent-amber);
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+.retry-btn:hover {
+  background: rgba(251, 191, 36, 0.3);
+}
+
+/* Mode selector — same chrome as language selector */
+.mode-dropdown {
+  background: transparent;
+  color: var(--text-main);
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+}
+
+.mode-dropdown option {
+  background: #1e293b;
+  color: #fff;
+}
+
+/* Thinking indicator in main stream */
+.log-entry.thinking-indicator {
+  background: rgba(192, 132, 252, 0.06);
+  border-left: 3px solid var(--accent-purple);
+  color: #e9d5ff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-style: italic;
+}
+
+.thinking-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+}
+
+.thinking-dots {
+  display: inline-flex;
+  gap: 1px;
+  margin-left: 1px;
+}
+
+.thinking-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.thinking-hint em {
+  font-style: normal;
+  color: var(--accent-purple);
+}
+
+/* Sequential dot pulse animation */
+.dot {
+  display: inline-block;
+  animation: dotPulse 1.4s infinite;
+}
+
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dotPulse {
+  0%, 60%, 100% { opacity: 1; }
+  30% { opacity: 0.15; }
 }

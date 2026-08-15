@@ -1,18 +1,27 @@
-import { GoogleGenAI } from '@google/genai';
-import { loadEnvironment, saveGeminiApiKey } from './environment';
-import { getProjectPaths, loadState } from './context';
-import { writeOutput } from './outputRouter';
-import { OutputChannelEnum } from '../enums/OutputChannelEnum';
+import { GoogleGenAI } from "@google/genai";
+import { loadEnvironment, saveGeminiApiKey } from "./environment";
+import { getProjectPaths, loadState } from "./context";
+import { writeOutput } from "./outputRouter";
+import { OutputChannelEnum } from "../enums/OutputChannelEnum";
+import { getPreference, buildPreferencePromptBlock } from "./preferenceEngine";
 
 export interface ParsedIntentResult {
-  type: 'NEED' | 'OFFER' | 'DETAIL_PLAN' | 'ANSWER' | 'CORRECTION' | 'QUERY' | 'EXIT' | 'COMMAND_SEQUENCE';
+  type:
+    | "NEED"
+    | "OFFER"
+    | "DETAIL_PLAN"
+    | "ANSWER"
+    | "CORRECTION"
+    | "QUERY"
+    | "EXIT"
+    | "COMMAND_SEQUENCE";
   verb?: string;
   object?: string;
   targetIdOrCode?: string;
   answerText?: string;
   correctionTopic?: string;
   correctionText?: string;
-  modelType?: 'Transactional' | 'GiftBased';
+  modelType?: "Transactional" | "GiftBased";
   explanation?: string; // Direct reply to user (stdout / Descriptor 1)
   thinkingDetails?: string; // Model reasoning and step breakdown (stderr / Descriptor 2)
   debugDetails?: string; // System debug details (stderr / Descriptor 2)
@@ -26,37 +35,54 @@ export function getStoredApiKey(rootDir: string = process.cwd()): string {
   return env.geminiApiKey;
 }
 
-export function saveApiKey(apiKey: string, rootDir: string = process.cwd()): void {
+export function saveApiKey(
+  apiKey: string,
+  rootDir: string = process.cwd(),
+): void {
   saveGeminiApiKey(apiKey, rootDir);
 }
 
 export async function processNaturalLanguageIntent(
   userInput: string,
-  rootDir: string = process.cwd()
+  rootDir: string = process.cwd(),
 ): Promise<ParsedIntentResult | null> {
   const env = loadEnvironment(rootDir);
 
   if (!env.geminiApiKey) {
-    console.log('\x1b[33m%s\x1b[0m', '[Gemini AI] Google Gemini API Key not detected.');
-    console.log('To connect your Google Gemini credentials, set GEMINI_API_KEY in your environment or type:');
-    console.log('\x1b[1mkey <YOUR_GEMINI_API_KEY>\x1b[0m\n');
+    console.log(
+      "\x1b[33m%s\x1b[0m",
+      "[Gemini AI] Google Gemini API Key not detected.",
+    );
+    console.log(
+      "To connect your Google Gemini credentials, set GEMINI_API_KEY in your environment or type:",
+    );
+    console.log("\x1b[1mkey <YOUR_GEMINI_API_KEY>\x1b[0m\n");
     return null;
   }
 
   const paths = getProjectPaths(rootDir);
   const state = loadState(paths.statePath);
   const modeConfig = state.operatingMode;
-  const lang = modeConfig?.detectedLanguage || 'en';
+  const lang = modeConfig?.detectedLanguage || "en";
   const isSuccinct = modeConfig?.isSuccinctMode !== false;
   const debugLevel = env.debugLevel;
+  const userId = state.activeUser?.userId ?? "user_local";
+  const prefs = getPreference(userId, rootDir);
+  const preferenceBlock = prefs ? buildPreferencePromptBlock(prefs) : "";
 
   try {
     const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
     const prompt = `You are the INUO Interaction Engine & Command Translation AI.
 The user input is: "${userInput}"
 Target Interaction Language: "${lang}"
-Succinct Mode: ${isSuccinct ? 'ACTIVE' : 'DISABLED'}
-
+Succinct Mode: ${isSuccinct ? "ACTIVE" : "DISABLED"}
+${
+  preferenceBlock
+    ? `
+${preferenceBlock}
+`
+    : ""
+}
 CRITICAL OUTPUT SEPARATION MANDATE:
 - "explanation": Direct user reply ONLY in Target Interaction Language ("${lang}"). Concise and direct.
 - "thinkingDetails": Step-by-step reasoning and goal decomposition thoughts (in "${lang}").
@@ -66,9 +92,13 @@ CRITICAL LANGUAGE MANDATE:
 - You MUST generate "explanation" and "thinkingDetails" strictly in Target Interaction Language ("${lang}").
 
 CRITICAL SUCCINCT MODE MANDATE:
-${isSuccinct ? `- Succinct Mode is ACTIVE: Be extremely concise, direct, and short.
+${
+  isSuccinct
+    ? `- Succinct Mode is ACTIVE: Be extremely concise, direct, and short.
 - NEVER generate markdown tables (| ... |).
-- Use ONLY simple bullet lists (- item) for any multi-item descriptions.` : `- Provide clear, helpful explanations.`}
+- Use ONLY simple bullet lists (- item) for any multi-item descriptions.`
+    : `- Provide clear, helpful explanations.`
+}
 
 SYSTEM OVERVIEW INQUIRIES ("What does INUO do?" / "¿Qué hace INUO?" / "Was macht INUO?" / "Que fait INUO?" / "O que faz o INUO?"):
 If the user asks what INUO does, its purpose, or general capabilities:
@@ -143,13 +173,20 @@ Return ONLY a raw JSON object with NO markdown formatting matching this structur
       contents: prompt,
     });
 
-    const text = response.text?.trim() || '';
-    const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const text = response.text?.trim() || "";
+    const cleanJson = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
     const result = JSON.parse(cleanJson) as ParsedIntentResult;
 
     // Route Thinking Details to stderr (Descriptor 2)
     if (result.thinkingDetails) {
-      writeOutput(OutputChannelEnum.THINKING, result.thinkingDetails, debugLevel);
+      writeOutput(
+        OutputChannelEnum.THINKING,
+        result.thinkingDetails,
+        debugLevel,
+      );
     }
 
     // Route Debug Details to stderr (Descriptor 2)
@@ -159,7 +196,11 @@ Return ONLY a raw JSON object with NO markdown formatting matching this structur
 
     return result;
   } catch (err: any) {
-    writeOutput(OutputChannelEnum.DEBUG, `[Gemini AI Error] ${err.message}`, debugLevel);
+    writeOutput(
+      OutputChannelEnum.DEBUG,
+      `[Gemini AI Error] ${err.message}`,
+      debugLevel,
+    );
     return null;
   }
 }

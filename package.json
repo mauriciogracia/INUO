@@ -1,16 +1,17 @@
 {
   "name": "inuo-cli",
   "version": "00.02.95",
-  "description": "Interactive shell CLI for the INUO Platform matching protocol and specification lifecycle",
+  "description": "Interactive shell CLI for the iNoU Platform matching protocol and specification lifecycle",
   "main": "dist/models/index.js",
   "bin": {
     "inuo": "./bin/inuo.js"
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "node scripts/devWatcher.js",
+    "build": "tsc && tsc --project tsconfig.browser.json",
+    "dev": "tsc && node dist/scripts/devWatcher.js",
+    "dev:web": "npm run build && node dist/scripts/devWatcher.js web 3000",
     "web": "npm run build && node bin/inuo.js web",
-    "serve": "node scripts/devWatcher.js",
+    "serve": "tsc && node dist/scripts/devWatcher.js",
     "pretest": "npm run build",
     "cli": "npm run build && node bin/inuo.js",
     "init": "npm run build && node bin/inuo.js init",

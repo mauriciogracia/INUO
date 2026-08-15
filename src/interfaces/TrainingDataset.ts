@@ -1,8 +1,9 @@
-import { Skill } from './Skill';
-import { Behavior } from './Behavior';
-import { Rule } from './Rule';
-import { LearnedCorrection } from './LearnedCorrection';
-import { CustomVerbPairing } from '../cli/context';
+import { Skill } from "./Skill";
+import { Behavior } from "./Behavior";
+import { Rule } from "./Rule";
+import { LearnedCorrection } from "./LearnedCorrection";
+import { CustomVerbPairing } from "../cli/context";
+import { UserPreferenceProfile } from "./UserPreferenceProfile";
 
 /**
  * Exportable and mergeable training dataset container for INUO knowledge.
@@ -28,4 +29,7 @@ export interface TrainingDataset {
 
   /** List of custom verb pairings */
   customVerbs: CustomVerbPairing[];
+
+  /** Learned user format preference profiles */
+  userPreferences?: UserPreferenceProfile[];
 }

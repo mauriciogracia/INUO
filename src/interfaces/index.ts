@@ -1,78 +1,53 @@
-export * from './Need';
-export * from './Offer';
-export * from './ExternalFulfillmentDetails';
-export * from './Match';
-export * from './VerbPairing';
-export * from './GlobalCatalogItem';
-export * from './DependencyEdge';
-export * from './DependencyGraph';
-export * from './IdentityVerification';
-export * from './AuditTrailEntry';
-export * from './PolicyEnforcement';
-export * from './OAuth2Config';
-export * from './EcosystemAdapter';
-export * from './ServiceModuleMapping';
-export * from './InuoManifest';
-export * from './PerformanceMetric';
-export * from './SelfOrchestrationTask';
-export * from './CLICommandContext';
-export * from './Environment';
-export * from './SyncResult';
-export * from './EvolveResult';
-export * from './NeedDoubt';
-export * from './Skill';
-export * from './Behavior';
-export * from './Rule';
-export * from './Principle';
-export * from './UserIdentity';
-export * from './LearnedCorrection';
-export * from './TrainingDataset';
-export * from './IncoherenceReport';
-export * from './MCPServerConfig';
-export * from './ColmenaNode';
-export * from './ColmenaSyncResult';
-export * from './ManipulationCheckResult';
-export * from './TrustRecord';
-export * from './ClientDeviceConfig';
-export * from './MasterMindSyncPayload';
-export * from './EmergencyContext';
-export * from './SelfAwarenessReport';
-export * from './MasterMindSnapshot';
-export * from './TrustedMemberConfig';
-export * from './EngineConfig';
-export * from './AuthSessionResult';
-export * from './BiometricVaultEntry';
-export * from './TrustThresholdGate';
-export * from './OperatingModeConfig';
-export * from './LanguageResolutionResult';
-export * from './SocialBroadcastPayload';
-export * from './InteractiveQuestionSpec';
-export * from './InuoVersionSpec';
-export * from './MasterMindSyncProgress';
-export * from './I18nDictionary';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+export * from "./Need";
+export * from "./Offer";
+export * from "./ExternalFulfillmentDetails";
+export * from "./Match";
+export * from "./VerbPairing";
+export * from "./GlobalCatalogItem";
+export * from "./DependencyEdge";
+export * from "./DependencyGraph";
+export * from "./IdentityVerification";
+export * from "./AuditTrailEntry";
+export * from "./PolicyEnforcement";
+export * from "./OAuth2Config";
+export * from "./EcosystemAdapter";
+export * from "./ServiceModuleMapping";
+export * from "./InuoManifest";
+export * from "./PerformanceMetric";
+export * from "./SelfOrchestrationTask";
+export * from "./CLICommandContext";
+export * from "./Environment";
+export * from "./SyncResult";
+export * from "./EvolveResult";
+export * from "./NeedDoubt";
+export * from "./Skill";
+export * from "./Behavior";
+export * from "./Rule";
+export * from "./Principle";
+export * from "./UserIdentity";
+export * from "./LearnedCorrection";
+export * from "./TrainingDataset";
+export * from "./IncoherenceReport";
+export * from "./MCPServerConfig";
+export * from "./ColmenaNode";
+export * from "./ColmenaSyncResult";
+export * from "./ManipulationCheckResult";
+export * from "./TrustRecord";
+export * from "./ClientDeviceConfig";
+export * from "./MasterMindSyncPayload";
+export * from "./EmergencyContext";
+export * from "./SelfAwarenessReport";
+export * from "./MasterMindSnapshot";
+export * from "./TrustedMemberConfig";
+export * from "./EngineConfig";
+export * from "./AuthSessionResult";
+export * from "./BiometricVaultEntry";
+export * from "./TrustThresholdGate";
+export * from "./OperatingModeConfig";
+export * from "./LanguageResolutionResult";
+export * from "./SocialBroadcastPayload";
+export * from "./InteractiveQuestionSpec";
+export * from "./InuoVersionSpec";
+export * from "./MasterMindSyncProgress";
+export * from "./I18nDictionary";
+export * from "./UserPreferenceProfile";
