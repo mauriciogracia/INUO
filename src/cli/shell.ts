@@ -294,10 +294,21 @@ export async function executeShellLine(
       runSelectiveSyncCommand(parts.slice(1), rootDir);
       break;
 
+    case "serve":
+    case "api":
+      const port = parts[1] ? parseInt(parts[1], 10) : 8765;
+      const { ApiServer } = require("../api");
+      const apiServer = new ApiServer(port, "127.0.0.1", rootDir);
+      console.log(`Starting INUO REST API Gateway & SSE Stream on http://127.0.0.1:${port}...`);
+      await apiServer.start();
+      console.log(`✔ [API Gateway Active] Server listening on http://127.0.0.1:${port}`);
+      break;
+
     case "adapt":
     case "adaptive":
       await runAdaptiveCommand(parts.slice(1), rootDir);
       break;
+
 
     case "key":
       if (!parts[1]) {

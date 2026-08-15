@@ -137,6 +137,17 @@ export function runSelectiveSyncCommand(args: string[], rootDir: string = proces
     }
   }
 
+  executeAutonomousSync(targetChannel, entities, projectId, workflowId, isLightweight, rootDir);
+}
+
+export function executeAutonomousSync(
+  targetChannel: string = 'google-drive',
+  entities: string[] = ['project', 'workspace', 'task', 'memory', 'preference'],
+  projectId?: string,
+  workflowId?: string,
+  isLightweight: boolean = false,
+  rootDir: string = process.cwd()
+): void {
   // Update last sync timestamp in manifest / state
   const paths = getProjectPaths(rootDir);
   const state = loadState(paths.statePath);
@@ -160,6 +171,7 @@ export function runSelectiveSyncCommand(args: string[], rootDir: string = proces
   }
   console.log('\x1b[32m%s\x1b[0m', `✔ [Autonomous Sync Complete] Delta reconciled. Local and remote entities (${entities.join(', ')}) are fully synchronized.`);
 }
+
 
 
 export function getAutoSyncConfig(rootDir: string = process.cwd()): {
