@@ -23,14 +23,10 @@ All project guidelines, single-definition file constraints (`src/enums/`, `src/t
 
 - AI agents and automated tools **MUST NOT** run test suites (`npm test`, `npm run test:all`, `node --test`, etc.) unless explicitly specified by the user in the prompt, or when bumping version or executing major refactors.
 
-## Custom Project Scripts Authorization
+## Custom Project Scripts Utilization & Authorization Rule
 
 - All custom scripts located in `scripts/` (`*.js`, `*.sh`) and repository root launchers (`listChildren.sh`, `inou.sh`, `iwc.sh`) are approved project utilities authorized for workspace execution.
+- AI agents and contributors **MUST** prioritize and use these custom `.js` and `.sh` scripts whenever available instead of constructing ad-hoc terminal commands, particularly for authorized workspace operations (e.g., listing files with `listChildren.sh`/`listChildren.js`, extracting markdown sections with `MD-listHeadingsSections.js`, normalizing line endings with `fix-crlf.js`, running tests with `run-tests.sh`, updating the knowledge graph with `update-graph.js`, etc.).
 
-## Improvement Tracking Workflow
 
-- Pending improvements are tracked in `to-improve/`.
-- Completed improvements are tracked in `improved/`.
-- Keep one markdown file per improvement item and keep file names stable.
-- After adding, editing, or moving improvement items, run `npm run improvements:sync` to regenerate `INDEX.md` files.
 

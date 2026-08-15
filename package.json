@@ -12,7 +12,6 @@
     "dev:web": "npm run build && node dist/scripts/devWatcher.js web 3000",
     "web": "npm run build && node bin/inuo.js web",
     "serve": "tsc && node dist/scripts/devWatcher.js",
-    "improvements:sync": "node scripts/sync-improvements.js",
     "graph:update": "node scripts/update-graph.js",
     "list": "node scripts/listChildren.js",
     "fix:crlf": "node scripts/fix-crlf.js",
@@ -27,7 +26,7 @@
     "test:models": "node scripts/test-google-models.js",
     "setup": "npm run build && node bin/inuo.js setup",
     "setup:llm": "bash scripts/setup-llm.sh",
-    "verify": "npm run build && npm test && npm run improvements:sync"
+    "verify": "npm run build && npm test"
   },
   "keywords": [
     "inuo",
