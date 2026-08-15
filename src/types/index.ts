@@ -26,3 +26,6 @@ export * from "./ResponseLength";
 export * from "./ResponseFormat";
 export * from "./SocialNetworkName";
 export * from "./TierFallbackMode";
+export * from "./SemanticEntity";
+export * from "./SemanticAction";
+

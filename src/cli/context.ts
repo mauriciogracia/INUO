@@ -98,6 +98,11 @@ export interface StateData {
   socialNetworkConfigurations?: SocialNetworkConfiguration[];
   costGovernance?: CostGovernanceConfig;
   aliases?: CommandAlias[];
+  projects?: any[];
+  workspaces?: any[];
+  activeProject?: string;
+  activeWorkspace?: string;
+  preferences?: Record<string, any>;
 }
 
 export const BASELINE_ENGINES: EngineConfig[] = [
@@ -332,6 +337,11 @@ export function loadState(statePath: string): StateData {
       socialNetworkConfigurations: parsed.socialNetworkConfigurations || [],
       costGovernance: parsed.costGovernance,
       aliases: parsed.aliases || [],
+      projects: parsed.projects || [],
+      workspaces: parsed.workspaces || [],
+      activeProject: parsed.activeProject,
+      activeWorkspace: parsed.activeWorkspace,
+      preferences: parsed.preferences || {},
     };
   } catch {
     return {
@@ -370,6 +380,11 @@ export function loadState(statePath: string): StateData {
       socialNetworkConfigurations: [],
       costGovernance: undefined,
       aliases: [],
+      projects: [],
+      workspaces: [],
+      activeProject: undefined,
+      activeWorkspace: undefined,
+      preferences: {},
     };
   }
 }

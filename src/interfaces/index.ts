@@ -64,3 +64,5 @@ export * from "./SkillDefinition";
 export * from "./TrainingPair";
 export * from "./EvolutionSnapshot";
 export * from "./CommandAlias";
+export * from "./SemanticCommandPayload";
+

@@ -76,6 +76,11 @@ import { runTierCommand } from "./tierCommand";
 import { runSetupCommand } from "./setupCommand";
 import { runLearnCommand } from "./learnCommand";
 import { resolveAlias, runAliasCommand } from "./aliasCommand";
+import {
+  parseSemanticCommand,
+  executeSemanticCommand,
+  normalizeSemanticEntity,
+} from "./semanticDispatcher";
 
 export async function executeShellLine(
   trimmed: string,
@@ -90,6 +95,15 @@ export async function executeShellLine(
 
   const parts = resolvedLine.split(/\s+/);
   const cmd = parts[0].toLowerCase();
+
+  // Check if first token is a canonical or localized Semantic Entity
+  if (normalizeSemanticEntity(cmd)) {
+    const semanticPayload = parseSemanticCommand(parts);
+    if (semanticPayload) {
+      const handled = await executeSemanticCommand(semanticPayload, rootDir);
+      if (handled) return;
+    }
+  }
 
   switch (cmd) {
     case "alias":
