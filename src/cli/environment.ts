@@ -36,6 +36,12 @@ export function loadEnvironment(rootDir: string = process.cwd()): Environment {
     } catch {}
   }
 
+  let tokenBudgetMonthly: number | undefined;
+  if (process.env.GEMINI_TOKEN_BUDGET) {
+    const v = parseInt(process.env.GEMINI_TOKEN_BUDGET, 10);
+    if (!isNaN(v) && v > 0) tokenBudgetMonthly = v;
+  }
+
   // Load from .inuo-state.json if state defines debugLevel
   if (fs.existsSync(statePath)) {
     try {
@@ -51,6 +57,9 @@ export function loadEnvironment(rootDir: string = process.cwd()): Environment {
     try {
       const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
       if (data.apiKey) geminiApiKey = data.apiKey;
+      if (!tokenBudgetMonthly && data.tokenBudgetMonthly) {
+        tokenBudgetMonthly = data.tokenBudgetMonthly;
+      }
     } catch {}
   }
 
@@ -73,6 +82,7 @@ export function loadEnvironment(rootDir: string = process.cwd()): Environment {
     configPath,
     defaultModel,
     debugLevel,
+    tokenBudgetMonthly,
   };
 }
 

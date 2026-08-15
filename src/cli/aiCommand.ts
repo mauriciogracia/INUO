@@ -1,11 +1,11 @@
 import { writeOutput } from "./outputRouter";
 import { OutputChannelEnum } from "../enums/OutputChannelEnum";
-import { getSummary, formatUsageDisplay, resetUsage } from "./usageEngine";
+import { getSummary, formatUsageDisplay, resetUsage, queryProviderCapacity } from "./usageEngine";
 
-export function runAiCommand(
+export async function runAiCommand(
   args: string[],
   rootDir: string = process.cwd(),
-): void {
+): Promise<void> {
   const sub = args[0]?.toLowerCase();
 
   if (sub === "usage") {
@@ -14,10 +14,11 @@ export function runAiCommand(
       writeOutput(OutputChannelEnum.USER_REPLY, "✔ AI usage log cleared.");
       return;
     }
-    writeOutput(
-      OutputChannelEnum.USER_REPLY,
-      formatUsageDisplay(getSummary(rootDir)),
-    );
+    const [summary, capacity] = await Promise.all([
+      Promise.resolve(getSummary(rootDir)),
+      queryProviderCapacity(rootDir),
+    ]);
+    writeOutput(OutputChannelEnum.USER_REPLY, formatUsageDisplay(summary, capacity));
     return;
   }
 

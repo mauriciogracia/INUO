@@ -73,7 +73,18 @@ test("AI Usage Engine Unit Tests", async (t) => {
     assert.match(display, /Requests/);
     assert.match(display, /Total tokens/);
   });
+  await t.test('formatUsageDisplay includes provider section when capacity supplied', () => {
+    const s = getSummary(scratchDir);
+    const display = formatUsageDisplay(s, { connected: true, contextWindowTokens: 1_000_000, maxOutputTokens: 8192 });
+    assert.match(display, /Context window/);
+    assert.match(display, /Connected/);
+  });
 
+  await t.test('formatUsageDisplay shows disconnected message on error', () => {
+    const s = getSummary(scratchDir);
+    const display = formatUsageDisplay(s, { connected: false, error: 'API key invalid' });
+    assert.match(display, /API key invalid/);
+  });
   await t.test("resetUsage clears the log", () => {
     resetUsage(scratchDir);
     const s = getSummary(scratchDir);

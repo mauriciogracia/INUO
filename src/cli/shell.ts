@@ -255,7 +255,7 @@ export async function executeShellLine(
       break;
 
     case "ai":
-      runAiCommand(parts.slice(1), rootDir);
+      await runAiCommand(parts.slice(1), rootDir);
       break;
 
     case "catalog":

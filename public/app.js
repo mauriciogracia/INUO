@@ -92,7 +92,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         ? `${(t / 1000000).toFixed(1)}M tk`
                         : t >= 1000
                             ? `${(t / 1000).toFixed(1)}k tk`
-                            : t > 0 ? `${t} tk` : `${data.aiUsage.requestCount} req`;
+                            : t > 0
+                                ? `${t} tk`
+                                : `${data.aiUsage.requestCount} req`;
                     statusAiEl.textContent = label;
                 }
             }
