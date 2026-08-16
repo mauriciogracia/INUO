@@ -314,6 +314,58 @@ INUO/
 
 ---
 
+## 🚀 Deployment
+
+### Prerequisites
+
+- **Docker & Docker Compose v2+** on the target server
+- A **public domain** with DNS A record pointing to your server's IP
+- A **Google Gemini API key** from [Google AI Studio](https://aistudio.google.com/app/apikey)
+
+### GitHub Actions Secrets Required
+
+Before the CI/CD pipeline can deploy, set the following secrets in your GitHub repository (`Settings → Secrets → Actions`):
+
+| Secret | Description |
+|---|---|
+| `GEMINI_API_KEY` | Your Google AI Studio / Gemini API key |
+| `INUO_DOMAIN` | Public domain, e.g. `inuo.yourdomain.com` |
+| `DEPLOY_HOST` | IP or hostname of your production server |
+| `DEPLOY_USER` | SSH user on the server (e.g. `deploy`) |
+| `DEPLOY_SSH_KEY` | Private SSH key (server must have the public key in `~/.ssh/authorized_keys`) |
+
+Optionally: `GEMINI_MODEL` (defaults to `gemini-flash-latest`).
+
+### Manual Deployment (First Time / Local)
+
+```bash
+# 1. Clone onto the server
+git clone <repo-url> /opt/inuo && cd /opt/inuo
+
+# 2. Create the environment file
+cp .env.example .env
+# Edit .env: fill in GEMINI_API_KEY and INUO_DOMAIN
+
+# 3. Deploy (builds image, starts Hub + Caddy, verifies health)
+npm run deploy
+
+# 4. Verify
+curl https://your-domain/health
+```
+
+### Deployment Targets
+
+| Command | Description |
+|---|---|
+| `npm run deploy` | Docker Compose + Caddy TLS (recommended for production) |
+| `npm run deploy docker` | Standalone Docker container, no Caddy |
+| `npm run deploy local` | Background Node.js daemon (no Docker required) |
+| `npm run deploy:dry` | Build + config validation only, no services started |
+
+> See [`docs/deployGaps.md`](docs/deployGaps.md) for a full deployment readiness checklist.
+
+---
+
 ## 📜 License
 
 MIT License — Copyright (c) INUO Development Team.

@@ -3,6 +3,8 @@ import { EventBus } from "./EventBus";
 import { InuoEventEnvelope } from "../../interfaces/InuoEventEnvelope";
 
 export class SseStreamHandler {
+  private static serverStartTime = Date.now().toString();
+
   public static handle(req: IncomingMessage, res: ServerResponse): void {
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
@@ -12,6 +14,7 @@ export class SseStreamHandler {
     });
 
     res.write(`: connected to inuo event stream\n\n`);
+    res.write(`data: ${JSON.stringify({ channel: "SERVER_HELLO", serverStartTime: SseStreamHandler.serverStartTime })}\n\n`);
 
     const bus = EventBus.getInstance();
     const lastEventId = req.headers["last-event-id"] as string | undefined;
@@ -38,6 +41,9 @@ export class SseStreamHandler {
   private static sendEvent(res: ServerResponse, envelope: InuoEventEnvelope): void {
     res.write(`id: ${envelope.eventId}\n`);
     res.write(`event: ${envelope.eventType}\n`);
-    res.write(`data: ${JSON.stringify(envelope)}\n\n`);
+    const payload = envelope.payload && typeof envelope.payload === "object" && (envelope.payload as any).channel
+      ? envelope.payload
+      : envelope;
+    res.write(`data: ${JSON.stringify(payload)}\n\n`);
   }
 }

@@ -1,0 +1,15 @@
+{$DOMAIN:localhost} {
+    encode gzip zstd
+
+    reverse_proxy inuo-hub:8765 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+
+        # Bypass buffering for real-time SSE stream events
+        transport http {
+            read_buffer 0
+        }
+    }
+}

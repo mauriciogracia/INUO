@@ -144,4 +144,12 @@ This document outlines the mandatory architectural principles, coding standards,
 - All custom scripts located in `scripts/` (`*.js`, `*.sh`) and repository root launchers (`listChildren.sh`, `inou.sh`, `iwc.sh`) are approved project utilities authorized for workspace execution.
 - AI agents and contributors **MUST** prioritize and use these custom `.js` and `.sh` scripts whenever available instead of constructing ad-hoc terminal commands, particularly for authorized workspace operations (e.g., listing files with `listChildren.sh`/`listChildren.js`, extracting markdown sections with `MD-listHeadingsSections.js`, normalizing line endings with `fix-crlf.js`, running tests with `run-tests.sh`, updating the knowledge graph with `update-graph.js`, etc.).
 
+### 6.6 Deployment & CI/CD Tooling Rule (.sh & .js Preference)
+
+- All deployment, orchestration, and continuous integration/continuous delivery (CI/CD) pipelines **MUST** prioritize and use `.sh` shell scripts and `.js` Node.js scripts (located in `scripts/` or repository root) over ad-hoc inline terminal commands or proprietary vendor lock-in configs.
+- Deployment operations must be encapsulated in standard project utilities:
+  - `scripts/deploy.js` / `scripts/deploy.sh`: Canonical deployment entrypoints supporting environment validation, container builds, health-check polling, and rollback on failure.
+  - `.github/workflows/ci-cd.yml`: Standardized CI/CD workflow executing `npm run build`, full test verification, and automated deployment orchestration.
+
+
 

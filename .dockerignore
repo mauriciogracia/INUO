@@ -1,0 +1,12 @@
+node_modules
+dist
+.inuo.db
+.inuo.db-shm
+.inuo.db-wal
+.inuo-key.json
+.inuo-state.json
+.env
+.git
+tests
+graphify-out
+tmp_*

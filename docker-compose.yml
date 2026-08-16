@@ -1,0 +1,58 @@
+services:
+  inuo-hub:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inuo_cloud_hub
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=8765
+      - HOST=0.0.0.0
+      - INUO_DATA_DIR=/app/data
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-flash-latest}
+      - DEBUG_LEVEL=${DEBUG_LEVEL:-1}
+    volumes:
+      - inuo_hub_data:/app/data
+    networks:
+      - inuo_internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  caddy-ingress:
+    image: caddy:2-alpine
+    container_name: inuo_caddy_ingress
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${INUO_DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - inuo_internal
+    depends_on:
+      - inuo-hub
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  inuo_hub_data:
+    driver: local
+  caddy_data:
+  caddy_config:
+
+networks:
+  inuo_internal:
+    driver: bridge

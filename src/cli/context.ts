@@ -24,11 +24,23 @@ export function getProjectPaths(rootDir: string = process.cwd()) {
   else if (fs.existsSync(docsSpec)) specPath = docsSpec;
   else if (fs.existsSync(rootSpec)) specPath = rootSpec;
 
+  const customDataDir = process.env.INUO_DATA_DIR || process.env.DATA_DIR;
+  let statePath = path.join(rootDir, ".inuo-state.json");
+  if (customDataDir) {
+    const resolvedDir = path.isAbsolute(customDataDir) ? customDataDir : path.resolve(rootDir, customDataDir);
+    if (!fs.existsSync(resolvedDir)) {
+      try {
+        fs.mkdirSync(resolvedDir, { recursive: true });
+      } catch {}
+    }
+    statePath = path.join(resolvedDir, ".inuo-state.json");
+  }
+
   return {
     rootDir,
     manifestPath: path.join(rootDir, "inuo-manifest.json"),
     specPath,
-    statePath: path.join(rootDir, ".inuo-state.json"),
+    statePath,
   };
 }
 

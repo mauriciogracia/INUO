@@ -1,13 +1,31 @@
 import { startInteractiveShell, dispatchSingleCommand } from "./shell";
-import { startWebServer } from "./webServer";
+import { ApiServer } from "../api";
+import { calculateInuoVersion } from "./versionEngine";
 
 const args = process.argv.slice(2);
+const rootDir = process.cwd();
 
-if (args[0] === "web" || args[0] === "server" || args[0] === "ui") {
-  const port = parseInt(args[1] ?? "", 10) || 3000;
-  startWebServer({ port, rootDir: process.cwd() });
+if (["serve", "api", "hub", "server", "web", "ui"].includes(args[0]?.toLowerCase())) {
+  const port = parseInt(args[1] || process.env.PORT || "8765", 10);
+  const host = process.env.HOST || "0.0.0.0";
+  const apiServer = new ApiServer(port, host, rootDir);
+  const inuoVer = calculateInuoVersion(rootDir);
+
+  apiServer.start().then(({ port: activePort, host: activeHost, url }) => {
+    console.log(
+      "\x1b[32m%s\x1b[0m",
+      `\n🚀 [INUO Cloud Relay Hub & API Gateway] Live at ${url} (binding ${activeHost}:${activePort})`
+    );
+    console.log(
+      "\x1b[36m%s\x1b[0m",
+      `   Version: v${inuoVer.fullVersionString} | REST API: ${url}/api/v1/* | SSE: ${url}/api/stream | Health: ${url}/health\n`
+    );
+  }).catch((err) => {
+    console.error("\x1b[31m[INUO Server Error]\x1b[0m", err.message);
+    process.exit(1);
+  });
 } else if (args.length === 0) {
-  startInteractiveShell(process.cwd());
+  startInteractiveShell(rootDir);
 } else {
-  void dispatchSingleCommand(args, process.cwd());
+  void dispatchSingleCommand(args, rootDir);
 }

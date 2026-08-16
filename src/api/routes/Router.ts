@@ -1,5 +1,7 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { parse as parseUrl } from "url";
+import fs from "fs";
+import path from "path";
 import { CorsMiddleware } from "../middleware/CorsMiddleware";
 import { ManipulationDefenseMiddleware } from "../middleware/ManipulationDefenseMiddleware";
 import { SseStreamHandler } from "../events/SseStreamHandler";
@@ -11,6 +13,35 @@ import { PreferenceController } from "../controllers/PreferenceController";
 import { IntegrationController } from "../controllers/IntegrationController";
 import { SyncController } from "../controllers/SyncController";
 import { CommandController } from "../controllers/CommandController";
+import { calculateInuoVersion } from "../../cli/versionEngine";
+import { getProjectPaths, loadState } from "../../cli/context";
+import { OperatingModeConfig } from "../../interfaces/OperatingModeConfig";
+import { getSessionStats } from "../../cli/usageEngine";
+import {
+  deleteLLMConfiguration,
+  getLLMConfigurations,
+  getLLMProviderSetup,
+  saveLLMConfiguration,
+} from "../../cli/llmCommand";
+import { probeAndConfigureModels, maskApiKey } from "../../cli/setupCommand";
+import { executeShellLine } from "../../cli/shell";
+import { EventBus } from "../events/EventBus";
+import { OutputChannelEnum } from "../../enums/OutputChannelEnum";
+import { TOOL_PROMPT } from "../../cli/brand";
+
+const MIME_MAP: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".ico": "image/x-icon",
+  ".woff2": "font/woff2",
+  ".txt": "text/plain; charset=utf-8",
+};
 
 export class Router {
   private healthCtrl: HealthController;
@@ -21,8 +52,10 @@ export class Router {
   private integrationCtrl: IntegrationController;
   private syncCtrl: SyncController;
   private commandCtrl: CommandController;
+  private rootDir: string;
 
   constructor(rootDir: string = process.cwd()) {
+    this.rootDir = rootDir;
     this.healthCtrl = new HealthController(rootDir);
     this.projectCtrl = new ProjectController(rootDir);
     this.workspaceCtrl = new WorkspaceController(rootDir);
@@ -47,10 +80,15 @@ export class Router {
       return;
     }
 
-    // 3. Buffer Request Body
+    // 3. Static Web PWA Asset Serving
+    if (method === "GET") {
+      if (this.serveStatic(pathname, res)) return;
+    }
+
+    // 4. Buffer Request Body
     const bodyText = await this.readBody(req);
 
-    // 4. Anti-Manipulation Circuit Breaker
+    // 5. Anti-Manipulation Circuit Breaker
     if (!ManipulationDefenseMiddleware.evaluate(bodyText, req, res)) return;
 
     let bodyJson: any = null;
@@ -64,14 +102,176 @@ export class Router {
       }
     }
 
-    // 5. REST Route Matrix
-    // Health Check
+    // 6. REST Route Matrix
+
+    // Health & Diagnostic Checks
     if (pathname === "/health" || pathname === "/api/v1/health" || pathname === "/api/v1/status") {
       this.healthCtrl.getStatus(res);
       return;
     }
 
-    // Command Execution
+    // Web UI System Status
+    if (pathname === "/api/status" && method === "GET") {
+      const inuoVer = calculateInuoVersion(this.rootDir);
+      const paths = getProjectPaths(this.rootDir);
+      const state = loadState(paths.statePath);
+      const modeConfig: OperatingModeConfig = state.operatingMode || {
+        currentMode: "promptMe",
+        detectedLanguage: "en",
+        autoDetectLanguage: true,
+        authRequiredOnStart: false,
+        updatedAt: new Date().toISOString(),
+      };
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          version: inuoVer.fullVersionString,
+          mode: modeConfig.currentMode || "promptMe",
+          lang: modeConfig.detectedLanguage || "en",
+          succinct: modeConfig.isSuccinctMode !== false,
+          debugLevel: modeConfig.debugLevel !== undefined ? modeConfig.debugLevel : 1,
+          aiUsage: (({ requestCount, totalTokens }) => ({
+            requestCount,
+            totalTokens,
+          }))(getSessionStats()),
+        })
+      );
+      return;
+    }
+
+    // LLM Configuration Endpoints
+    if (pathname === "/api/llm/configurations") {
+      if (method === "GET") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ configurations: getLLMConfigurations(this.rootDir) }));
+        return;
+      }
+      if (method === "POST") {
+        try {
+          const forbiddenField = Object.keys(bodyJson || {}).find((key) =>
+            /api.?key|secret|token|password|credential/i.test(key)
+          );
+          if (forbiddenField) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(
+              JSON.stringify({
+                error: `Secret field "${forbiddenField}" is not accepted. Configure credentials in the provider environment.`,
+              })
+            );
+            return;
+          }
+
+          const configuration = saveLLMConfiguration(
+            {
+              configurationName: String(bodyJson.configurationName || ""),
+              engineName: String(bodyJson.engineName || ""),
+              model: String(bodyJson.model || ""),
+              baseUrl: bodyJson.baseUrl ? String(bodyJson.baseUrl) : undefined,
+              supportsPlanMode: bodyJson.supportsPlanMode === true,
+              supportsExecuteMode: bodyJson.supportsExecuteMode === true,
+            },
+            this.rootDir
+          );
+          res.writeHead(201, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ status: "created", configuration }));
+          return;
+        } catch (error) {
+          const message = (error as Error).message;
+          res.writeHead(message.includes("already exists") ? 409 : 400, {
+            "Content-Type": "application/json",
+          });
+          res.end(JSON.stringify({ error: message }));
+          return;
+        }
+      }
+    }
+
+    const llmDeleteMatch = pathname.match(/^\/api\/llm\/configurations\/([a-zA-Z0-9._-]+)$/);
+    if (llmDeleteMatch && method === "DELETE") {
+      const configName = decodeURIComponent(llmDeleteMatch[1]);
+      if (!deleteLLMConfiguration(configName, this.rootDir)) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: `LLM configuration "${configName}" not found.` }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: "removed", configurationName: configName }));
+      return;
+    }
+
+    // LLM Probe & Setup Endpoint
+    if (pathname === "/api/setup/llm" && method === "POST") {
+      try {
+        const apiKey = bodyJson?.apiKey;
+        if (!apiKey || typeof apiKey !== "string") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Missing or invalid 'apiKey' field in request body." }));
+          return;
+        }
+        const result = await probeAndConfigureModels(apiKey, this.rootDir);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            success: result.success,
+            workingFree: result.workingFree,
+            workingPaid: result.workingPaid,
+            maskedKey: maskApiKey(apiKey),
+            message: result.message,
+          })
+        );
+        return;
+      } catch (err: any) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: err.message || "Failed to configure LLM setup." }));
+        return;
+      }
+    }
+
+    // Web UI / Shell Command Execution Endpoint
+    if (pathname === "/api/command" && method === "POST") {
+      try {
+        const command = (bodyJson?.command || "").trim();
+        if (command) {
+          EventBus.getInstance().publish("output.message", "preference", "update", {
+            channel: OutputChannelEnum.USER_REPLY,
+            content: `${TOOL_PROMPT} ${command}`,
+            timestamp: new Date().toISOString(),
+          });
+
+          const interactiveAdd = /^llm\s+add\s+([A-Za-z0-9._-]+)$/i.exec(command);
+          if (bodyJson.uiMode === true && interactiveAdd) {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(
+              JSON.stringify({
+                status: "input_required",
+                uiAction: {
+                  type: "LLM_CONFIGURATION",
+                  setup: getLLMProviderSetup(interactiveAdd[1]),
+                },
+              })
+            );
+            return;
+          }
+
+          await executeShellLine(command, this.rootDir);
+        }
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ status: "ok" }));
+        return;
+      } catch (err: any) {
+        EventBus.getInstance().publish("output.message", "preference", "update", {
+          channel: OutputChannelEnum.DEBUG,
+          content: `[Command Execution Error] ${err.message}`,
+          timestamp: new Date().toISOString(),
+        });
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: err.message }));
+        return;
+      }
+    }
+
+    // REST Semantic Command Execution
     if (pathname === "/api/v1/command" && method === "POST") {
       this.commandCtrl.execute(bodyJson, res);
       return;
@@ -138,6 +338,28 @@ export class Router {
     // 404 Fallback
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ success: false, error: `Route not found: ${method} ${pathname}` }));
+  }
+
+  private serveStatic(pathname: string, res: ServerResponse): boolean {
+    const publicDir = path.join(this.rootDir, "public");
+    let relativeFile = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+    const filePath = path.join(publicDir, relativeFile);
+
+    // Prevent directory traversal
+    if (!filePath.startsWith(publicDir)) {
+      return false;
+    }
+
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      const ext = path.extname(filePath).toLowerCase();
+      const contentType = MIME_MAP[ext] || "application/octet-stream";
+      const content = fs.readFileSync(filePath);
+      res.writeHead(200, { "Content-Type": contentType });
+      res.end(content);
+      return true;
+    }
+
+    return false;
   }
 
   private readBody(req: IncomingMessage): Promise<string> {

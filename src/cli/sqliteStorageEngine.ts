@@ -12,6 +12,16 @@ try {
 }
 
 export function getDatabasePath(rootDir: string = process.cwd()): string {
+  const customDataDir = process.env.INUO_DATA_DIR || process.env.DATA_DIR;
+  if (customDataDir) {
+    const resolvedDir = path.isAbsolute(customDataDir) ? customDataDir : path.resolve(rootDir, customDataDir);
+    if (!fs.existsSync(resolvedDir)) {
+      try {
+        fs.mkdirSync(resolvedDir, { recursive: true });
+      } catch {}
+    }
+    return path.join(resolvedDir, ".inuo.db");
+  }
   return path.join(rootDir, ".inuo.db");
 }
 

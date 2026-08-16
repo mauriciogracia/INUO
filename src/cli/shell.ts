@@ -170,7 +170,6 @@ export async function executeShellLine(
       break;
 
     case "letmeserveyou":
-    case "serve":
       runModeCommand(["letMeServeYou"], rootDir);
       break;
 
@@ -296,12 +295,14 @@ export async function executeShellLine(
 
     case "serve":
     case "api":
-      const port = parts[1] ? parseInt(parts[1], 10) : 8765;
+    case "hub":
+      const port = parts[1] ? parseInt(parts[1], 10) : parseInt(process.env.PORT || "8765", 10);
+      const host = process.env.HOST || "0.0.0.0";
       const { ApiServer } = require("../api");
-      const apiServer = new ApiServer(port, "127.0.0.1", rootDir);
-      console.log(`Starting INUO REST API Gateway & SSE Stream on http://127.0.0.1:${port}...`);
+      const apiServer = new ApiServer(port, host, rootDir);
+      console.log(`Starting INUO Cloud Relay Hub & API Gateway on http://${host === "0.0.0.0" ? "127.0.0.1" : host}:${port}...`);
       await apiServer.start();
-      console.log(`✔ [API Gateway Active] Server listening on http://127.0.0.1:${port}`);
+      console.log(`✔ [Cloud Relay Hub Active] Server listening on http://${host === "0.0.0.0" ? "127.0.0.1" : host}:${port}`);
       break;
 
     case "adapt":
