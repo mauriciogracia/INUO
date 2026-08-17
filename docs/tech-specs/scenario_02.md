@@ -4,7 +4,7 @@
 | :--- | :--- |
 | **Status** | `CANONICAL` |
 | **Domain** | Distributed Fulfillment, Swarm Orchestration, DAG Decomposition |
-| **Architecture Reference** | [`tech-specs/main-specs-goals.md`](file:///d:/repos/INUO/tech-specs/main-specs-goals.md) §3, §4, §5 |
+| **Architecture Reference** | [`main-specs-goals.md`](file:///d:/repos/INUO/docs/tech-specs/main-specs-goals.md) §3, §4, §5 |
 
 ---
 

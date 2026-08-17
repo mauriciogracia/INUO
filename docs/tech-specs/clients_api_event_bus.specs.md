@@ -4,7 +4,7 @@
 | :--- | :--- |
 | **Status** | `CANONICAL` |
 | **Target Components** | Mobile (Android/iOS), CLI (`inou.sh`), Web UI, 3rd-Party Integrations, REST API Gateway, Real-Time Event Bus |
-| **Architecture Reference** | [`tech-specs/main-specs-goals.md`](file:///d:/repos/INUO/tech-specs/main-specs-goals.md), [`tech-specs/dev-rules.md`](file:///d:/repos/INUO/tech-specs/dev-rules.md) |
+| **Architecture Reference** | [`main-specs-goals.md`](file:///d:/repos/INUO/docs/tech-specs/main-specs-goals.md), [`dev-rules.md`](file:///d:/repos/INUO/docs/tech-specs/dev-rules.md) |
 
 ---
 

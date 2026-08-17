@@ -3,7 +3,7 @@
 | Property | Value |
 | :--- | :--- |
 | **Status** | `CANONICAL ROADMAP` |
-| **Architecture Reference** | [`tech-specs/main-specs-goals.md`](file:///d:/repos/INUO/tech-specs/main-specs-goals.md), [`tech-specs/dev-rules.md`](file:///d:/repos/INUO/tech-specs/dev-rules.md) |
+| **Architecture Reference** | [`main-specs-goals.md`](file:///d:/repos/INUO/docs/tech-specs/main-specs-goals.md), [`dev-rules.md`](file:///d:/repos/INUO/docs/tech-specs/dev-rules.md) |
 | **Target Platforms** | CLI (`inou.sh`), Web UI / PWA, Android, iOS, REST/MCP Gateway, Colmena Mesh |
 
 ---
@@ -100,11 +100,11 @@ The **INUO** ecosystem is a decentralized, offline-first interaction protocol th
 
 ### Phase 6: Cloud Master Mind & Long-Context LLM Continuity
 * [ ] **Google Drive & Encrypted Cloud Storage Adapters**:
-  - Encrypted snapshot sync for interrupted planning resumption ([`tech-specs/scenario_03.md`](file:///d:/repos/INUO/tech-specs/scenario_03.md)).
+  - Encrypted snapshot sync for interrupted planning resumption ([`scenario_03.md`](file:///d:/repos/INUO/docs/tech-specs/scenario_03.md)).
 * [ ] **Google Gemini Context Caching Integration**:
   - Generates persistent cache tokens (`gemini-cache-...`) to eliminate token re-ingestion costs when resuming cross-device planning.
 * [ ] **Delegated Incapacitation Trust Network**:
-  - Trusted Members Network and emergency delegation protocols ([`tech-specs/scenario_04.md`](file:///d:/repos/INUO/tech-specs/scenario_04.md)).
+  - Trusted Members Network and emergency delegation protocols ([`scenario_04.md`](file:///d:/repos/INUO/docs/tech-specs/scenario_04.md)).
 
 ---
 

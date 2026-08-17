@@ -4,7 +4,7 @@
 | :--- | :--- |
 | **Status** | `CANONICAL` |
 | **Domain** | Cloud State Synchronization, Google Drive Integration, Multi-LLM Context Portability, Cross-Device Entity Retrieval |
-| **Architecture Reference** | [`tech-specs/main-specs-goals.md`](file:///d:/repos/INUO/tech-specs/main-specs-goals.md), [`tech-specs/clients_api_event_bus.specs.md`](file:///d:/repos/INUO/tech-specs/clients_api_event_bus.specs.md) |
+| **Architecture Reference** | [`main-specs-goals.md`](file:///d:/repos/INUO/docs/tech-specs/main-specs-goals.md), [`clients_api_event_bus.specs.md`](file:///d:/repos/INUO/docs/tech-specs/clients_api_event_bus.specs.md) |
 
 ---
 

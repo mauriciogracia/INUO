@@ -268,7 +268,7 @@ npm run web
 
 ## 📐 Architecture & Development Directives
 
-All development in this repository strictly adheres to [`tech-specs/dev-rules.md`](file:///d:/repos/INUO/tech-specs/dev-rules.md), the **single source of truth** for architectural standards:
+All development in this repository strictly adheres to [`docs/tech-specs/dev-rules.md`](file:///d:/repos/INUO/docs/tech-specs/dev-rules.md), the **single source of truth** for architectural standards:
 
 1. **Single Definition per File**: Every `enum`, `type` alias, and `interface` **MUST** reside in its own dedicated file:
    - `src/enums/`: Enums (e.g., [`NeedStatusEnum.ts`](file:///d:/repos/INUO/src/enums/NeedStatusEnum.ts))

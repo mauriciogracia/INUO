@@ -4,7 +4,7 @@
 | :--- | :--- |
 | **Status** | `CANONICAL` |
 | **Architecture Domain** | L1 RAM Cache, L2 SQLite Storage Engine, Causal Delta Sync, Git-Like 3-Way Conflict Resolution |
-| **Architecture Reference** | [`tech-specs/main-specs-goals.md`](file:///d:/repos/INUO/tech-specs/main-specs-goals.md), [`tech-specs/clients_api_event_bus.specs.md`](file:///d:/repos/INUO/tech-specs/clients_api_event_bus.specs.md) |
+| **Architecture Reference** | [`main-specs-goals.md`](file:///d:/repos/INUO/docs/tech-specs/main-specs-goals.md), [`clients_api_event_bus.specs.md`](file:///d:/repos/INUO/docs/tech-specs/clients_api_event_bus.specs.md) |
 
 ---
 

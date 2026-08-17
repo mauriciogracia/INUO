@@ -4,7 +4,7 @@
 | :--- | :--- |
 | **Status** | `CANONICAL SPECIFICATION` |
 | **Domain** | E2E CLI Scenario Execution, `./inou.sh` Terminal Harness, Integration TUI Testing |
-| **Architecture Reference** | [`tech-specs/scenario_02.md`](file:///d:/repos/INUO/tech-specs/scenario_02.md), [`tech-specs/scenario_03.md`](file:///d:/repos/INUO/tech-specs/scenario_03.md), [`tech-specs/scenario_04.md`](file:///d:/repos/INUO/tech-specs/scenario_04.md), [`tech-specs/base_00.specs.md`](file:///d:/repos/INUO/tech-specs/base_00.specs.md) |
+| **Architecture Reference** | [`scenario_02.md`](file:///d:/repos/INUO/docs/tech-specs/scenario_02.md), [`scenario_03.md`](file:///d:/repos/INUO/docs/tech-specs/scenario_03.md), [`scenario_04.md`](file:///d:/repos/INUO/docs/tech-specs/scenario_04.md), [`base_00.specs.md`](file:///d:/repos/INUO/docs/tech-specs/base_00.specs.md) |
 
 ---
 

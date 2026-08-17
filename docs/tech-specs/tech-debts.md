@@ -141,23 +141,23 @@
 
 ---
 
-### TI-01 · Fix Broken Internal Spec Links After `mv`
+### ~~TI-01~~ · ✅ Fix Broken Internal Spec Links After `mv` — **RESOLVED 2026-08-17**
 
 | Field | Value |
 |-------|-------|
 | **Source** | [`to-improve/0002`](../../to-improve/0002-broken-spec-links-after-mv.md) · [`docs/current-status.md`](../current-status.md) |
-| **Priority** | 🔴 P0 |
-| **Description** | After moving `tech-specs/` under `docs/`, internal cross-references in multiple `.md` files use old absolute paths (e.g. `file:///d:/repos/INUO/tech-specs/...`) that are now broken. All intra-spec links need to be updated to relative paths. |
+| **Priority** | ~~🔴 P0~~ → ✅ Resolved |
+| **Resolution** | Updated all 15 occurrences of `file:///d:/repos/INUO/tech-specs/` → `file:///d:/repos/INUO/docs/tech-specs/` across 11 files: all `docs/tech-specs/*.specs.md` headers, `road-map.md`, `README.md`, `AGENTS.md`, and `skills/google-workspace-skill/SKILL.md`. |
 
 ---
 
-### TI-02 · Unified Canonical SQLite DDL — Resolve Schema Conflicts
+### ~~TI-02~~ · ✅ Unified Canonical SQLite DDL — **RESOLVED 2026-08-17**
 
 | Field | Value |
 |-------|-------|
 | **Source** | [`to-improve/0003`](../../to-improve/0003-unify-canonical-sqlite-ddl.md) · [`docs/current-status.md`](../current-status.md) |
-| **Priority** | 🔴 P0 |
-| **Description** | The SQLite schema is currently defined in multiple places (`sqliteStorageEngine.ts`, `sqlite_schema_and_indexes.specs.md`, `main-specs-goals.md`). These definitions have drifted out of sync. A single canonical DDL source must be established and all others must reference it. |
+| **Priority** | ~~🔴 P0~~ → ✅ Resolved |
+| **Resolution** | `sqliteStorageEngine.ts` DDL synced to `sqlite_schema_and_indexes.specs.md` (canonical source). Added: `PRAGMA foreign_keys = ON`, `PRAGMA busy_timeout = 3000` (also fixes TD-07), `workflows` table with FK to `projects`, `CHECK` constraints on all enum columns (`status`, `scope`, `category`, `auth_type`, `dependency_type`, `sync_status`, `operation`, `entity_type`), FK constraints on `dependency_edges` and `tasks`, `semantic_path` column on `tasks`, and 3 missing indexes (`idx_tasks_semantic_path`, `idx_dependency_edges_workflow`, `idx_chats_owner`). |
 
 ---
 

@@ -4,7 +4,7 @@
 | :--- | :--- |
 | **Status** | `CANONICAL` |
 | **Domain** | External APIs, Social Networks, Cloud Storage, LLM Providers, Decoupled Vault Security |
-| **Architecture Reference** | [`tech-specs/main-specs-goals.md`](file:///d:/repos/INUO/tech-specs/main-specs-goals.md), [`tech-specs/storage_and_sync_architecture.specs.md`](file:///d:/repos/INUO/tech-specs/storage_and_sync_architecture.specs.md) |
+| **Architecture Reference** | [`main-specs-goals.md`](file:///d:/repos/INUO/docs/tech-specs/main-specs-goals.md), [`storage_and_sync_architecture.specs.md`](file:///d:/repos/INUO/docs/tech-specs/storage_and_sync_architecture.specs.md) |
 
 ---
 
