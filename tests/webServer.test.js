@@ -63,7 +63,7 @@ test("Lightweight HTTP Web Server Unit Tests", async (t) => {
     });
 
     assert.equal(typeof data.version, "string");
-    assert.equal(typeof data.mode, "string");
+    assert.equal(typeof data.userStyle, "string");
     assert.equal(typeof data.lang, "string");
     assert.equal(typeof data.succinct, "boolean");
   });

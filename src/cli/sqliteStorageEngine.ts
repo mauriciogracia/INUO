@@ -14,7 +14,9 @@ try {
 export function getDatabasePath(rootDir: string = process.cwd()): string {
   const customDataDir = process.env.INUO_DATA_DIR || process.env.DATA_DIR;
   if (customDataDir) {
-    const resolvedDir = path.isAbsolute(customDataDir) ? customDataDir : path.resolve(rootDir, customDataDir);
+    const resolvedDir = path.isAbsolute(customDataDir)
+      ? customDataDir
+      : path.resolve(rootDir, customDataDir);
     if (!fs.existsSync(resolvedDir)) {
       try {
         fs.mkdirSync(resolvedDir, { recursive: true });
@@ -141,19 +143,46 @@ export function initSqliteDatabase(dbPath: string): any {
         synced_at TEXT
       );
 
+      CREATE TABLE IF NOT EXISTS chats (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'Active',
+        message_ids_json TEXT NOT NULL DEFAULT '[]',
+        model_type TEXT NOT NULL DEFAULT 'default',
+        owner_id TEXT NOT NULL DEFAULT 'user_local',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        cloud_sync_id TEXT,
+        sync_version INTEGER NOT NULL DEFAULT 1,
+        sync_status TEXT NOT NULL DEFAULT 'LOCAL_ONLY'
+      );
+
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id TEXT PRIMARY KEY,
+        chat_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        metadata_json TEXT,
+        created_at TEXT NOT NULL,
+        cloud_sync_id TEXT,
+        sync_status TEXT NOT NULL DEFAULT 'LOCAL_ONLY',
+        FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE
+      );
+
       -- High-Performance Composite Indexes
       CREATE INDEX IF NOT EXISTS idx_tasks_updated_at ON tasks(updated_at);
       CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at);
       CREATE INDEX IF NOT EXISTS idx_workspaces_updated_at ON workspaces(updated_at);
       CREATE INDEX IF NOT EXISTS idx_memories_updated_at ON memories(updated_at);
+      CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at);
+      CREATE INDEX IF NOT EXISTS idx_chats_owner ON chats(owner_id, status);
+      CREATE INDEX IF NOT EXISTS idx_chat_messages_chat ON chat_messages(chat_id, created_at);
       CREATE INDEX IF NOT EXISTS idx_tasks_workflow ON tasks(workflow_id, status);
       CREATE INDEX IF NOT EXISTS idx_preferences_scope ON preferences(scope, scope_id, pref_key);
       CREATE INDEX IF NOT EXISTS idx_integrations_provider ON integrations(provider, scope);
       CREATE INDEX IF NOT EXISTS idx_sync_journal_pending ON cloud_sync_journal(sync_status, recorded_at);
     `);
     return db;
-
-
   } catch (err) {
     return null;
   }
@@ -162,7 +191,10 @@ export function initSqliteDatabase(dbPath: string): any {
 /**
  * Persists state into SQLite tables (Write-Through L1 RAM -> L2 SQLite).
  */
-export function persistStateToSqlite(data: StateData, rootDir: string = process.cwd()): boolean {
+export function persistStateToSqlite(
+  data: StateData,
+  rootDir: string = process.cwd(),
+): boolean {
   if (!DatabaseSync) return false;
 
   const dbPath = getDatabasePath(rootDir);
@@ -179,7 +211,14 @@ export function persistStateToSqlite(data: StateData, rootDir: string = process.
         VALUES (?, ?, ?, ?, ?, ?)
       `);
       for (const p of data.projects) {
-        insertProj.run(p.id, p.name, p.jurisdiction || "GLOBAL", p.status || "Active", p.createdAt || now, p.updatedAt || now);
+        insertProj.run(
+          p.id,
+          p.name,
+          p.jurisdiction || "GLOBAL",
+          p.status || "Active",
+          p.createdAt || now,
+          p.updatedAt || now,
+        );
       }
     }
 
@@ -190,11 +229,41 @@ export function persistStateToSqlite(data: StateData, rootDir: string = process.
         VALUES (?, ?, ?, ?, ?, ?)
       `);
       for (const ws of data.workspaces) {
-        insertWs.run(ws.id, ws.name, ws.path, ws.status || "Active", ws.createdAt || now, ws.updatedAt || now);
+        insertWs.run(
+          ws.id,
+          ws.name,
+          ws.path,
+          ws.status || "Active",
+          ws.createdAt || now,
+          ws.updatedAt || now,
+        );
       }
     }
 
-    // 3. Tasks & Workflow Nodes & Needs & Offers
+    // 3. Chats
+    if (data.chats && data.chats.length > 0) {
+      const insertChat = db.prepare(`
+        INSERT OR REPLACE INTO chats (id, title, status, message_ids_json, model_type, owner_id, created_at, updated_at, cloud_sync_id, sync_version, sync_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      for (const c of data.chats) {
+        insertChat.run(
+          c.id,
+          c.title || "Untitled Chat",
+          c.status || "Active",
+          JSON.stringify(c.messageIds || []),
+          c.modelType || "default",
+          c.ownerId || "user_local",
+          c.createdAt || now,
+          c.updatedAt || now,
+          c.cloudSyncId || null,
+          c.syncVersion || 1,
+          c.syncStatus || "LOCAL_ONLY",
+        );
+      }
+    }
+
+    // 4. Tasks & Workflow Nodes & Needs & Offers
     const insertTask = db.prepare(`
       INSERT OR REPLACE INTO tasks (id, project_id, workflow_id, parent_task_id, title, entity_type, verb, object, complement_verb, role, status, details, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -202,29 +271,72 @@ export function persistStateToSqlite(data: StateData, rootDir: string = process.
 
     if (data.needs) {
       for (const n of data.needs) {
-        insertTask.run(n.id, null, null, n.parentNeedId || null, `NEED: ${n.verb} ${n.object}`, "need", n.verb, n.object, n.complementVerb || null, null, n.status || "Open", n.details || null, n.createdAt || now, n.updatedAt || now);
+        insertTask.run(
+          n.id,
+          null,
+          null,
+          n.parentNeedId || null,
+          `NEED: ${n.verb} ${n.object}`,
+          "need",
+          n.verb,
+          n.object,
+          n.complementVerb || null,
+          null,
+          n.status || "Open",
+          n.details || null,
+          n.createdAt || now,
+          n.updatedAt || now,
+        );
       }
     }
 
     if (data.workflowNodes) {
       for (const wn of data.workflowNodes) {
-        insertTask.run(wn.nodeId, null, null, null, wn.nodeName, "workflowNode", null, null, null, null, "Open", wn.engineConfiguration || null, wn.createdAt || now, wn.updatedAt || now);
+        insertTask.run(
+          wn.nodeId,
+          null,
+          null,
+          null,
+          wn.nodeName,
+          "workflowNode",
+          null,
+          null,
+          null,
+          null,
+          "Open",
+          wn.engineConfiguration || null,
+          wn.createdAt || now,
+          wn.updatedAt || now,
+        );
       }
     }
 
-    // 4. Preferences (Scoped & Global)
+    // 5. Preferences (Scoped & Global)
     if (data.preferences) {
       const insertPref = db.prepare(`
         INSERT OR REPLACE INTO preferences (storage_key, pref_key, value_json, scope, scope_id, is_enabled, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `);
-      for (const [sk, item] of Object.entries(data.preferences as Record<string, any>)) {
+      for (const [sk, item] of Object.entries(
+        data.preferences as Record<string, any>,
+      )) {
         const pk = item.key || sk;
-        const valJson = JSON.stringify(item.value !== undefined ? item.value : item);
+        const valJson = JSON.stringify(
+          item.value !== undefined ? item.value : item,
+        );
         const sc = item.scope || "global";
         const scId = item.scopeId || null;
         const enabled = item.enabled !== false ? 1 : 0;
-        insertPref.run(sk, pk, valJson, sc, scId, enabled, item.createdAt || now, item.updatedAt || now);
+        insertPref.run(
+          sk,
+          pk,
+          valJson,
+          sc,
+          scId,
+          enabled,
+          item.createdAt || now,
+          item.updatedAt || now,
+        );
       }
     }
 
@@ -235,13 +347,26 @@ export function persistStateToSqlite(data: StateData, rootDir: string = process.
     `);
     updateSyncMeta.run("projects", now, 1, data.projects?.length || 0);
     updateSyncMeta.run("workspaces", now, 1, data.workspaces?.length || 0);
-    updateSyncMeta.run("tasks", now, 1, (data.needs?.length || 0) + (data.workflowNodes?.length || 0));
-    updateSyncMeta.run("preferences", now, 1, Object.keys(data.preferences || {}).length);
+    updateSyncMeta.run("chats", now, 1, data.chats?.length || 0);
+    updateSyncMeta.run(
+      "tasks",
+      now,
+      1,
+      (data.needs?.length || 0) + (data.workflowNodes?.length || 0),
+    );
+    updateSyncMeta.run(
+      "preferences",
+      now,
+      1,
+      Object.keys(data.preferences || {}).length,
+    );
 
     db.close();
     return true;
   } catch (err) {
-    try { db.close(); } catch {}
+    try {
+      db.close();
+    } catch {}
     return false;
   }
 }
@@ -250,7 +375,13 @@ export function persistStateToSqlite(data: StateData, rootDir: string = process.
  * Loads mutated entities from SQLite since a given timestamp.
  */
 export function queryMutatedEntitiesSince(
-  tableName: "projects" | "workspaces" | "tasks" | "memories" | "preferences" | "integrations",
+  tableName:
+    | "projects"
+    | "workspaces"
+    | "tasks"
+    | "memories"
+    | "preferences"
+    | "integrations",
   lastSyncAt: string,
   rootDir: string = process.cwd(),
 ): any[] {
@@ -268,7 +399,9 @@ export function queryMutatedEntitiesSince(
     db.close();
     return rows;
   } catch {
-    try { db.close(); } catch {}
+    try {
+      db.close();
+    } catch {}
     return [];
   }
 }
@@ -276,7 +409,9 @@ export function queryMutatedEntitiesSince(
 /**
  * Rehydrates in-memory StateData from SQLite tables (.inuo.db).
  */
-export function rehydrateStateFromSqlite(rootDir: string = process.cwd()): Partial<StateData> | null {
+export function rehydrateStateFromSqlite(
+  rootDir: string = process.cwd(),
+): Partial<StateData> | null {
   if (!DatabaseSync) return null;
 
   const dbPath = getDatabasePath(rootDir);
@@ -286,23 +421,46 @@ export function rehydrateStateFromSqlite(rootDir: string = process.cwd()): Parti
   if (!db) return null;
 
   try {
-    const projects = db.prepare("SELECT * FROM projects").all().map((r: any) => ({
-      id: r.id,
-      name: r.name,
-      jurisdiction: r.jurisdiction,
-      status: r.status,
-      createdAt: r.created_at,
-      updatedAt: r.updated_at,
-    }));
+    const projects = db
+      .prepare("SELECT * FROM projects")
+      .all()
+      .map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        jurisdiction: r.jurisdiction,
+        status: r.status,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }));
 
-    const workspaces = db.prepare("SELECT * FROM workspaces").all().map((r: any) => ({
-      id: r.id,
-      name: r.name,
-      path: r.path,
-      status: r.status,
-      createdAt: r.created_at,
-      updatedAt: r.updated_at,
-    }));
+    const workspaces = db
+      .prepare("SELECT * FROM workspaces")
+      .all()
+      .map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        path: r.path,
+        status: r.status,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }));
+
+    const chats = db
+      .prepare("SELECT * FROM chats")
+      .all()
+      .map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        status: r.status,
+        messageIds: JSON.parse(r.message_ids_json || "[]"),
+        modelType: r.model_type,
+        ownerId: r.owner_id,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+        cloudSyncId: r.cloud_sync_id,
+        syncVersion: r.sync_version,
+        syncStatus: r.sync_status,
+      }));
 
     const rawTasks = db.prepare("SELECT * FROM tasks").all();
     const needs: any[] = [];
@@ -331,7 +489,9 @@ export function rehydrateStateFromSqlite(rootDir: string = process.cwd()): Parti
     const preferences: Record<string, any> = {};
     for (const p of rawPrefs) {
       let val: any = p.value_json;
-      try { val = JSON.parse(p.value_json); } catch {}
+      try {
+        val = JSON.parse(p.value_json);
+      } catch {}
       preferences[p.storage_key] = {
         key: p.pref_key,
         value: val,
@@ -347,12 +507,15 @@ export function rehydrateStateFromSqlite(rootDir: string = process.cwd()): Parti
     return {
       projects,
       workspaces,
+      chats,
       needs,
       workflowNodes,
       preferences,
     };
   } catch {
-    try { db.close(); } catch {}
+    try {
+      db.close();
+    } catch {}
     return null;
   }
 }
@@ -373,7 +536,9 @@ export function vacuumSqliteDatabase(rootDir: string = process.cwd()): boolean {
     db.close();
     return true;
   } catch {
-    try { db.close(); } catch {}
+    try {
+      db.close();
+    } catch {}
     return false;
   }
 }
@@ -398,14 +563,23 @@ export function getSqliteDatabaseStats(rootDir: string = process.cwd()): {
     const db = initSqliteDatabase(dbPath);
     if (db) {
       try {
-        const tableNames = ["projects", "workspaces", "tasks", "memories", "preferences", "integrations"];
+        const tableNames = [
+          "projects",
+          "workspaces",
+          "tasks",
+          "memories",
+          "preferences",
+          "integrations",
+        ];
         for (const tbl of tableNames) {
           const row = db.prepare(`SELECT COUNT(*) as count FROM ${tbl}`).get();
           tables[tbl] = row?.count || 0;
         }
         db.close();
       } catch {
-        try { db.close(); } catch {}
+        try {
+          db.close();
+        } catch {}
       }
     }
   }
@@ -416,4 +590,3 @@ export function getSqliteDatabaseStats(rootDir: string = process.cwd()): {
     tables,
   };
 }
-

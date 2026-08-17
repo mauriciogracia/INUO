@@ -72,10 +72,4 @@ export * from "./IntegrationConnection";
 export * from "./IRepository";
 export * from "./ConflictResolutionResult";
 export * from "./InuoEventEnvelope";
-
-
-
-
-
-
-
+export * from "./Chat";

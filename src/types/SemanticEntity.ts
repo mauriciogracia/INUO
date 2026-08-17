@@ -1,6 +1,7 @@
 export type SemanticEntity =
-  | 'project'
-  | 'workspace'
-  | 'task'
-  | 'memory'
-  | 'preference';
+  | "project"
+  | "workspace"
+  | "task"
+  | "memory"
+  | "preference"
+  | "chat";

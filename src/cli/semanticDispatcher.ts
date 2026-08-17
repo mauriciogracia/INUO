@@ -90,6 +90,14 @@ export function normalizeSemanticEntity(raw: string): SemanticEntity | null {
     case "modo":
       return "preference";
 
+    case "chat":
+    case "conversacion":
+    case "conversation":
+    case "gespräch":
+    case "ch":
+    case "c":
+      return "chat";
+
     default:
       return null;
   }
@@ -262,6 +270,10 @@ export async function executeSemanticCommand(
         rawArgs,
         rootDir,
       );
+    }
+
+    case "chat": {
+      return executeChatAction(action, targetId, options, rawArgs, rootDir);
     }
 
     default:
@@ -1186,6 +1198,165 @@ function executePreferenceAction(
         });
       }
       runAliasCommand(["list"], rootDir);
+      return true;
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 6. CHAT ENTITY HANDLER
+// -----------------------------------------------------------------------------
+function executeChatAction(
+  action: SemanticAction,
+  targetId: string | undefined,
+  options: Record<string, any>,
+  rawArgs: string[],
+  rootDir: string,
+): boolean {
+  const paths = getProjectPaths(rootDir);
+  const state = loadState(paths.statePath);
+  const chats = state.chats || [];
+
+  switch (action) {
+    case "add": {
+      const title =
+        options.title || targetId || `Chat (${new Date().toLocaleString()})`;
+      const newChat = {
+        id: `chat_${Date.now()}`,
+        title,
+        status: "Active",
+        messageIds: [],
+        modelType: options.model || options.modelType || "default",
+        ownerId: state.activeUser?.userId || "user_local",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      chats.push(newChat);
+      state.chats = chats;
+      state.activeChat = newChat.id;
+      saveState(paths.statePath, state);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[32m✔ Chat created: "${newChat.title}" [ID: ${newChat.id}]\x1b[0m`,
+      );
+      return true;
+    }
+
+    case "update": {
+      const id = targetId || state.activeChat;
+      const chat = chats.find((c: any) => c.id === id || c.title === id);
+      if (!chat) {
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[31m❌ Chat not found: ${id}\x1b[0m`,
+        );
+        return false;
+      }
+      if (options.title) chat.title = options.title;
+      if (options.modelType) chat.modelType = options.modelType;
+      if (options.status) chat.status = options.status;
+      chat.updatedAt = new Date().toISOString();
+      saveState(paths.statePath, state);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[32m✔ Chat updated: "${chat.title}" [ID: ${chat.id}]\x1b[0m`,
+      );
+      return true;
+    }
+
+    case "enable": {
+      const id = targetId || state.activeChat;
+      const chat = chats.find((c: any) => c.id === id || c.title === id);
+      if (!chat) {
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[31m❌ Chat not found: ${id}\x1b[0m`,
+        );
+        return false;
+      }
+      chat.status = "Active";
+      state.activeChat = chat.id;
+      saveState(paths.statePath, state);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[32m✔ Chat activated: "${chat.title}" [ID: ${chat.id}]\x1b[0m`,
+      );
+      return true;
+    }
+
+    case "disable": {
+      const id = targetId || state.activeChat;
+      const chat = chats.find((c: any) => c.id === id || c.title === id);
+      if (!chat) {
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[31m❌ Chat not found: ${id}\x1b[0m`,
+        );
+        return false;
+      }
+      chat.status = "Archived";
+      if (state.activeChat === chat.id) {
+        const activeChats = chats.filter((c: any) => c.status === "Active");
+        state.activeChat = activeChats[0]?.id || undefined;
+      }
+      saveState(paths.statePath, state);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[33m✔ Chat archived: "${chat.title}" [ID: ${chat.id}]\x1b[0m`,
+      );
+      return true;
+    }
+
+    case "remove": {
+      const id = targetId || state.activeChat;
+      const index = chats.findIndex((c: any) => c.id === id || c.title === id);
+      if (index === -1) {
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[31m❌ Chat not found: ${id}\x1b[0m`,
+        );
+        return false;
+      }
+      const removed = chats.splice(index, 1)[0];
+      state.chats = chats;
+      if (state.activeChat === removed.id) {
+        const activeChats = chats.filter((c: any) => c.status === "Active");
+        state.activeChat = activeChats[0]?.id || undefined;
+      }
+      saveState(paths.statePath, state);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[32m✔ Chat deleted: "${removed.title}" [ID: ${removed.id}]\x1b[0m`,
+      );
+      return true;
+    }
+
+    case "list":
+    default: {
+      const activeChat = state.activeChat;
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\n\x1b[36m=== INOU Chats (${chats.length}) ===\x1b[0m`,
+      );
+      if (chats.length === 0) {
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `  (No chats yet. Use "chat add --title <name>" to create one.)\n`,
+        );
+      } else {
+        chats.forEach((c: any) => {
+          const activeTag = c.id === activeChat ? " [ACTIVE]" : "";
+          const statusTag =
+            c.status === "Active"
+              ? " \x1b[32m(Active)\x1b[0m"
+              : " \x1b[33m(Archived)\x1b[0m";
+          const msgCount = c.messageIds?.length || 0;
+          writeOutput(
+            OutputChannelEnum.USER_REPLY,
+            `  • [${c.id}] ${c.title}${statusTag}${activeTag} — ${msgCount} messages`,
+          );
+        });
+      }
       return true;
     }
   }

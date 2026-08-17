@@ -117,8 +117,11 @@ export interface StateData {
   aliases?: CommandAlias[];
   projects?: any[];
   workspaces?: any[];
+  chats?: any[];
+  tasks?: any[];
   activeProject?: string;
   activeWorkspace?: string;
+  activeChat?: string;
   preferences?: Record<string, any>;
 }
 
@@ -306,7 +309,7 @@ function migrateLegacyOperatingMode(
 
 export function loadState(statePath: string): StateData {
   const defaultUser: UserIdentity = {
-    userId: "user_local_1",
+    userId: "user_local",
     userName: "RegularUser",
     role: "RegularUser",
     authenticatedAt: new Date().toISOString(),
@@ -352,8 +355,10 @@ export function loadState(statePath: string): StateData {
         aliases: [],
         projects: sqliteRehydrated?.projects || [],
         workspaces: sqliteRehydrated?.workspaces || [],
+        chats: sqliteRehydrated?.chats || [],
         activeProject: undefined,
         activeWorkspace: undefined,
+        activeChat: undefined,
         preferences: sqliteRehydrated?.preferences || {},
       } as StateData),
     });
@@ -413,8 +418,10 @@ export function loadState(statePath: string): StateData {
       aliases: migrated.aliases || [],
       projects: migrated.projects || [],
       workspaces: migrated.workspaces || [],
+      chats: migrated.chats || [],
       activeProject: migrated.activeProject,
       activeWorkspace: migrated.activeWorkspace,
+      activeChat: migrated.activeChat,
       preferences: migrated.preferences || {},
     };
   } catch {
@@ -457,8 +464,10 @@ export function loadState(statePath: string): StateData {
         aliases: [],
         projects: sqliteRehydrated?.projects || [],
         workspaces: sqliteRehydrated?.workspaces || [],
+        chats: sqliteRehydrated?.chats || [],
         activeProject: undefined,
         activeWorkspace: undefined,
+        activeChat: undefined,
         preferences: sqliteRehydrated?.preferences || {},
       } as StateData),
     });
