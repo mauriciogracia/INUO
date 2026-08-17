@@ -366,6 +366,15 @@ curl https://your-domain/health
 
 ---
 
+## 📖 Technical Documentation
+
+| Document | Description |
+|---|---|
+| [`docs/tech-specs/ThePromptFlow.md`](docs/tech-specs/ThePromptFlow.md) | Full layer-by-layer architecture of the prompt lifecycle — Web UI → API → Shell → AI → SSE — with 40 catalogued failure points and mitigations. |
+| [`docs/deployGaps.md`](docs/deployGaps.md) | Deployment readiness checklist and known gaps. |
+
+---
+
 ## 📜 License
 
 MIT License — Copyright (c) INUO Development Team.
