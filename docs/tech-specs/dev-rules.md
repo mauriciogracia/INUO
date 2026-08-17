@@ -151,5 +151,45 @@ This document outlines the mandatory architectural principles, coding standards,
   - `scripts/deploy.js` / `scripts/deploy.sh`: Canonical deployment entrypoints supporting environment validation, container builds, health-check polling, and rollback on failure.
   - `.github/workflows/ci-cd.yml`: Standardized CI/CD workflow executing `npm run build`, full test verification, and automated deployment orchestration.
 
+---
+
+## 7. Feature & Command Completeness Rules
+
+### 7.1 Semantic Command Spec Parity — `inouCommandsSemantics.md`
+
+Every new feature that introduces or modifies user-facing behavior **MUST** be reflected in
+[`docs/to-improve/inouCommandsSemantics.md`](file:///d:/repos/INUO/docs/to-improve/inouCommandsSemantics.md)
+(or its canonical successor if the file is promoted to `docs/tech-specs/`).
+
+**Mandatory steps for any feature that adds, renames, or removes a CLI command or semantic action:**
+
+1. **Specify first**: Add or update the entity–action entry in `inouCommandsSemantics.md` before (or alongside) writing implementation code. Treat the spec entry as the acceptance contract.
+2. **Implement the handler**: Wire the command through `semanticDispatcher.ts` (for entity-action pairs) or the `switch` in `shell.ts` (for standalone commands).
+3. **Update autocomplete**: Reflect any new entity, action, or `--flag` in `src/cli/autocomplete.ts` — both the `FLAGS` map and `STANDALONE_SUBS` map as applicable.
+4. **Acceptance criteria**: The new command MUST appear in `help` output and MUST be tab-completable in the interactive shell before the feature is considered done.
+
+> **Violation**: Merging a CLI feature without a corresponding `inouCommandsSemantics.md` entry is a spec drift violation and MUST be flagged in code review.
+
+---
+
+### 7.2 UI Parity Rule — Web UI Must Mirror Every CLI Command
+
+Whenever a CLI command is **added**, **modified**, or **removed**, the corresponding Web UI surface **MUST** be specified and implemented in the same work item. The following apply:
+
+1. **Commands that mutate state** (`add`, `update`, `enable`, `disable`, `remove`) **MUST** be reachable from the Web UI — either as a typed command in the prompt bar, a dedicated button/form, or a context-menu action on the relevant list item.
+2. **Read commands** (`list`, `status`) **MUST** be surfaced as a rendered view or panel in the Web UI, not just as raw text in the log stream.
+3. **Flag-driven parameters** (e.g., `--name`, `--path`, `--jurisdiction`) for any `add` or `update` action **MUST** be mapped to labelled form fields in a dialog or inline form — not typed freehand in the prompt.
+4. **Error states** returned by the CLI handler **MUST** propagate as styled error messages in the UI (not silently dropped in the SSE stream).
+
+**Implementation checklist for any command-bearing feature:**
+
+- [ ] `inouCommandsSemantics.md` updated (Rule 7.1)
+- [ ] `semanticDispatcher.ts` or `shell.ts` handler implemented
+- [ ] `autocomplete.ts` updated
+- [ ] Web UI: action reachable (button / form / command palette entry)
+- [ ] Web UI: list/status view updated if entity data changes
+- [ ] Web UI: error state handled and displayed
+
+> **Violation**: Shipping a CLI command that has no Web UI path to trigger or observe it is a UI parity violation. Open a `to-improve/` ticket immediately if the UI work must be deferred, stating the command name and the deferred UI scope.
 
 

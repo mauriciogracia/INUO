@@ -12,7 +12,6 @@ import { runOfferCommand } from "./offerCommand";
 import { runMatchCommand } from "./matchCommand";
 import { runAliasCommand } from "./aliasCommand";
 import { runSocialMediaCommand } from "./snCommand";
-import { runModeCommand } from "./modeCommand";
 import { runTierCommand } from "./tierCommand";
 import {
   runRoleCommand,
@@ -180,7 +179,9 @@ export function normalizeSemanticAction(raw: string): SemanticAction | null {
 /**
  * Parses raw argument tokens into a structured SemanticCommandPayload.
  */
-export function parseSemanticCommand(args: string[]): SemanticCommandPayload | null {
+export function parseSemanticCommand(
+  args: string[],
+): SemanticCommandPayload | null {
   if (!args || args.length === 0) return null;
 
   const entity = normalizeSemanticEntity(args[0]);
@@ -254,7 +255,13 @@ export async function executeSemanticCommand(
     }
 
     case "preference": {
-      return executePreferenceAction(action, targetId, options, rawArgs, rootDir);
+      return executePreferenceAction(
+        action,
+        targetId,
+        options,
+        rawArgs,
+        rootDir,
+      );
     }
 
     default:
@@ -301,7 +308,10 @@ function executeProjectAction(
       const id = targetId || state.activeProject;
       const proj = projects.find((p: any) => p.id === id || p.name === id);
       if (!proj) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[31m❌ Project not found: ${id}\x1b[0m`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[31m❌ Project not found: ${id}\x1b[0m`,
+        );
         return false;
       }
       if (options.name) proj.name = options.name;
@@ -319,12 +329,18 @@ function executeProjectAction(
       const id = targetId || state.activeProject;
       const proj = projects.find((p: any) => p.id === id || p.name === id);
       if (!proj) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[31m❌ Project not found: ${id}\x1b[0m`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[31m❌ Project not found: ${id}\x1b[0m`,
+        );
         return false;
       }
       proj.status = "Active";
       saveState(paths.statePath, state);
-      writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Project enabled: "${proj.name}" [ID: ${proj.id}]\x1b[0m`);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[32m✔ Project enabled: "${proj.name}" [ID: ${proj.id}]\x1b[0m`,
+      );
       return true;
     }
 
@@ -332,20 +348,31 @@ function executeProjectAction(
       const id = targetId || state.activeProject;
       const proj = projects.find((p: any) => p.id === id || p.name === id);
       if (!proj) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[31m❌ Project not found: ${id}\x1b[0m`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[31m❌ Project not found: ${id}\x1b[0m`,
+        );
         return false;
       }
       proj.status = "Disabled";
       saveState(paths.statePath, state);
-      writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[33m✔ Project disabled: "${proj.name}" [ID: ${proj.id}]\x1b[0m`);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[33m✔ Project disabled: "${proj.name}" [ID: ${proj.id}]\x1b[0m`,
+      );
       return true;
     }
 
     case "remove": {
       const id = targetId || state.activeProject;
-      const index = projects.findIndex((p: any) => p.id === id || p.name === id);
+      const index = projects.findIndex(
+        (p: any) => p.id === id || p.name === id,
+      );
       if (index === -1) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[31m❌ Project not found: ${id}\x1b[0m`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[31m❌ Project not found: ${id}\x1b[0m`,
+        );
         return false;
       }
       const removed = projects.splice(index, 1)[0];
@@ -354,20 +381,35 @@ function executeProjectAction(
         delete state.activeProject;
       }
       saveState(paths.statePath, state);
-      writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Project removed: "${removed.name}" [ID: ${removed.id}]\x1b[0m`);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[32m✔ Project removed: "${removed.name}" [ID: ${removed.id}]\x1b[0m`,
+      );
       return true;
     }
 
     case "list":
     default: {
-      writeOutput(OutputChannelEnum.USER_REPLY, `\n\x1b[36m=== INOU Projects (${projects.length}) ===\x1b[0m`);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\n\x1b[36m=== INOU Projects (${projects.length}) ===\x1b[0m`,
+      );
       if (projects.length === 0) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `  (No custom projects configured. Using default workspace root.)`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `  (No custom projects configured. Using default workspace root.)`,
+        );
       } else {
         projects.forEach((p: any) => {
           const activeTag = p.id === state.activeProject ? " [ACTIVE]" : "";
-          const statusTag = p.status === "Disabled" ? " \x1b[31m(Disabled)\x1b[0m" : " \x1b[32m(Active)\x1b[0m";
-          writeOutput(OutputChannelEnum.USER_REPLY, `  • [${p.id}] ${p.name}${statusTag}${activeTag}`);
+          const statusTag =
+            p.status === "Disabled"
+              ? " \x1b[31m(Disabled)\x1b[0m"
+              : " \x1b[32m(Active)\x1b[0m";
+          writeOutput(
+            OutputChannelEnum.USER_REPLY,
+            `  • [${p.id}] ${p.name}${statusTag}${activeTag}`,
+          );
         });
       }
       return true;
@@ -414,13 +456,19 @@ function executeWorkspaceAction(
       const id = targetId || state.activeWorkspace;
       const ws = workspaces.find((w: any) => w.id === id || w.name === id);
       if (!ws) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[31m❌ Workspace not found: ${id}\x1b[0m`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[31m❌ Workspace not found: ${id}\x1b[0m`,
+        );
         return false;
       }
       if (options.name) ws.name = options.name;
       if (options.path) ws.path = path.resolve(options.path);
       saveState(paths.statePath, state);
-      writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Workspace updated: "${ws.name}" -> ${ws.path}\x1b[0m`);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[32m✔ Workspace updated: "${ws.name}" -> ${ws.path}\x1b[0m`,
+      );
       return true;
     }
 
@@ -428,12 +476,18 @@ function executeWorkspaceAction(
       const id = targetId || state.activeWorkspace;
       const ws = workspaces.find((w: any) => w.id === id || w.name === id);
       if (!ws) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[31m❌ Workspace not found: ${id}\x1b[0m`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[31m❌ Workspace not found: ${id}\x1b[0m`,
+        );
         return false;
       }
       ws.status = "Active";
       saveState(paths.statePath, state);
-      writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Workspace enabled: "${ws.name}"\x1b[0m`);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[32m✔ Workspace enabled: "${ws.name}"\x1b[0m`,
+      );
       return true;
     }
 
@@ -441,37 +495,63 @@ function executeWorkspaceAction(
       const id = targetId || state.activeWorkspace;
       const ws = workspaces.find((w: any) => w.id === id || w.name === id);
       if (!ws) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[31m❌ Workspace not found: ${id}\x1b[0m`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[31m❌ Workspace not found: ${id}\x1b[0m`,
+        );
         return false;
       }
       ws.status = "Disabled";
       saveState(paths.statePath, state);
-      writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[33m✔ Workspace disabled: "${ws.name}"\x1b[0m`);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[33m✔ Workspace disabled: "${ws.name}"\x1b[0m`,
+      );
       return true;
     }
 
     case "remove": {
       const id = targetId || state.activeWorkspace;
-      const idx = workspaces.findIndex((w: any) => w.id === id || w.name === id);
+      const idx = workspaces.findIndex(
+        (w: any) => w.id === id || w.name === id,
+      );
       if (idx === -1) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[31m❌ Workspace not found: ${id}\x1b[0m`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[31m❌ Workspace not found: ${id}\x1b[0m`,
+        );
         return false;
       }
       const removed = workspaces.splice(idx, 1)[0];
       state.workspaces = workspaces;
       saveState(paths.statePath, state);
-      writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Workspace removed: "${removed.name}"\x1b[0m`);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[32m✔ Workspace removed: "${removed.name}"\x1b[0m`,
+      );
       return true;
     }
 
     case "list":
     default: {
-      writeOutput(OutputChannelEnum.USER_REPLY, `\n\x1b[36m=== INOU Workspaces ===\x1b[0m`);
-      writeOutput(OutputChannelEnum.USER_REPLY, `  • Current Workspace Root: ${rootDir}`);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\n\x1b[36m=== INOU Workspaces ===\x1b[0m`,
+      );
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `  • Current Workspace Root: ${rootDir}`,
+      );
       workspaces.forEach((w: any) => {
         const activeTag = w.id === state.activeWorkspace ? " [ACTIVE]" : "";
-        const statusTag = w.status === "Disabled" ? " \x1b[31m(Disabled)\x1b[0m" : " \x1b[32m(Active)\x1b[0m";
-        writeOutput(OutputChannelEnum.USER_REPLY, `  • [${w.id}] ${w.name}: ${w.path}${statusTag}${activeTag}`);
+        const statusTag =
+          w.status === "Disabled"
+            ? " \x1b[31m(Disabled)\x1b[0m"
+            : " \x1b[32m(Active)\x1b[0m";
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `  • [${w.id}] ${w.name}: ${w.path}${statusTag}${activeTag}`,
+        );
       });
       return true;
     }
@@ -493,22 +573,49 @@ function executeTaskAction(
   switch (action) {
     case "add": {
       if (subType === "workflow" || options.workflow_name) {
-        const name = options.name || options.workflow_name || targetId || "NewWorkflow";
+        const name =
+          options.name || options.workflow_name || targetId || "NewWorkflow";
         runNodeCommand(["add", "--workflow", name], rootDir);
         return true;
       }
-      const offerVerbs = ["donate", "provide", "supply", "deliver", "lend", "share", "teach", "offer"];
-      const isOfferVerb = options.verb && offerVerbs.includes(options.verb.toLowerCase());
+      const offerVerbs = [
+        "donate",
+        "provide",
+        "supply",
+        "deliver",
+        "lend",
+        "share",
+        "teach",
+        "offer",
+      ];
+      const isOfferVerb =
+        options.verb && offerVerbs.includes(options.verb.toLowerCase());
       if (subType === "offer" || options.complement || isOfferVerb) {
-        runOfferCommand(["create", "--verb", options.complement || options.verb || "Provide", "--object", options.object || options.title || options.name || "Item"], rootDir);
+        runOfferCommand(
+          [
+            "create",
+            "--verb",
+            options.complement || options.verb || "Provide",
+            "--object",
+            options.object || options.title || options.name || "Item",
+          ],
+          rootDir,
+        );
         return true;
       }
       if (subType === "need" || options.verb) {
-        runNeedCommand(["create", "--verb", options.verb || "Request", "--object", options.object || options.title || options.name || "Item"], rootDir);
+        runNeedCommand(
+          [
+            "create",
+            "--verb",
+            options.verb || "Request",
+            "--object",
+            options.object || options.title || options.name || "Item",
+          ],
+          rootDir,
+        );
         return true;
       }
-
-
 
       // Default to adding a task node to the DAG
       const title = options.title || options.name || targetId || "New Task";
@@ -517,10 +624,12 @@ function executeTaskAction(
       return true;
     }
 
-
     case "update": {
       if (!targetId) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `Usage: task update <taskId> [--status <Status>] [--title <Title>]`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `Usage: task update <taskId> [--status <Status>] [--title <Title>]`,
+        );
         return false;
       }
       const cmdArgs = ["update", targetId];
@@ -532,7 +641,10 @@ function executeTaskAction(
 
     case "enable": {
       if (!targetId) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `Usage: task enable <taskId>`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `Usage: task enable <taskId>`,
+        );
         return false;
       }
       runNodeCommand(["update", targetId, "--status", "Open"], rootDir);
@@ -541,7 +653,10 @@ function executeTaskAction(
 
     case "disable": {
       if (!targetId) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `Usage: task disable <taskId>`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `Usage: task disable <taskId>`,
+        );
         return false;
       }
       runNodeCommand(["update", targetId, "--status", "Blocked"], rootDir);
@@ -550,7 +665,10 @@ function executeTaskAction(
 
     case "remove": {
       if (!targetId) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `Usage: task remove <taskId>`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `Usage: task remove <taskId>`,
+        );
         return false;
       }
       runNodeCommand(["delete", targetId], rootDir);
@@ -563,11 +681,19 @@ function executeTaskAction(
         runMatchCommand(rootDir);
         return true;
       }
-      if (subType === "need" || rawArgs[0]?.toLowerCase() === "need" || rawArgs[0]?.toLowerCase() === "necesidad") {
+      if (
+        subType === "need" ||
+        rawArgs[0]?.toLowerCase() === "need" ||
+        rawArgs[0]?.toLowerCase() === "necesidad"
+      ) {
         runNeedCommand(["list"], rootDir);
         return true;
       }
-      if (subType === "offer" || rawArgs[0]?.toLowerCase() === "offer" || rawArgs[0]?.toLowerCase() === "oferta") {
+      if (
+        subType === "offer" ||
+        rawArgs[0]?.toLowerCase() === "offer" ||
+        rawArgs[0]?.toLowerCase() === "oferta"
+      ) {
         runOfferCommand(["list"], rootDir);
         return true;
       }
@@ -576,7 +702,6 @@ function executeTaskAction(
       runNodeCommand(cmdArgs, rootDir);
       return true;
     }
-
   }
 }
 
@@ -599,14 +724,24 @@ function executeMemoryAction(
         return true;
       }
       if (subType === "behavior" || options.behavior) {
-        const title = options.title || options.behavior || targetId || "New Behavior";
+        const title =
+          options.title || options.behavior || targetId || "New Behavior";
         runBehaviorCommand(["add", title], rootDir);
         return true;
       }
       if (subType === "principle" || options.principle) {
-        const name = options.name || options.title || options.principle || targetId || "New Principle";
-        const statement = options.statement || options.details || options.content || name;
-        runPrincipleCommand(["add", "--name", name, "--statement", statement], rootDir);
+        const name =
+          options.name ||
+          options.title ||
+          options.principle ||
+          targetId ||
+          "New Principle";
+        const statement =
+          options.statement || options.details || options.content || name;
+        runPrincipleCommand(
+          ["add", "--name", name, "--statement", statement],
+          rootDir,
+        );
         return true;
       }
       // Default: skill learning
@@ -617,20 +752,32 @@ function executeMemoryAction(
 
     case "update": {
       if (!targetId) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `Usage: memory update <memoryId> [--content <Text>]`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `Usage: memory update <memoryId> [--content <Text>]`,
+        );
         return false;
       }
       if (subType === "principle") {
-        runPrincipleCommand(["update", targetId, options.content || ""], rootDir);
+        runPrincipleCommand(
+          ["update", targetId, options.content || ""],
+          rootDir,
+        );
         return true;
       }
-      writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Memory updated: ${targetId}\x1b[0m`);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[32m✔ Memory updated: ${targetId}\x1b[0m`,
+      );
       return true;
     }
 
     case "enable": {
       if (!targetId) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `Usage: memory enable <memoryId>`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `Usage: memory enable <memoryId>`,
+        );
         return false;
       }
       runBehaviorCommand(["enable", targetId], rootDir);
@@ -639,7 +786,10 @@ function executeMemoryAction(
 
     case "disable": {
       if (!targetId) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `Usage: memory disable <memoryId>`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `Usage: memory disable <memoryId>`,
+        );
         return false;
       }
       runBehaviorCommand(["disable", targetId], rootDir);
@@ -648,7 +798,10 @@ function executeMemoryAction(
 
     case "remove": {
       if (!targetId) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `Usage: memory remove <memoryId>`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `Usage: memory remove <memoryId>`,
+        );
         return false;
       }
       runForgetCommand([targetId], rootDir);
@@ -688,8 +841,83 @@ function executePreferenceAction(
   switch (action) {
     case "add":
     case "update": {
+      if (
+        key === "style" ||
+        key === "interaction_style" ||
+        key === "interactionstyle"
+      ) {
+        const userId =
+          loadState(paths.statePath).activeUser?.userId ?? "user_local";
+        const profile = (loadState(paths.statePath).userPreferences ?? []).find(
+          (p) => p.userId === userId,
+        ) || {
+          userId,
+          signalCount: 0,
+          updatedAt: new Date().toISOString(),
+        };
+        profile.interactionStyle = (value || "canonical") as any;
+        const state = loadState(paths.statePath);
+        if (!state.userPreferences?.some((p) => p.userId === userId))
+          state.userPreferences = [...(state.userPreferences ?? []), profile];
+        state.operatingMode = {
+          currentMode: value === "letMeServeYou" ? "letMeServeYou" : "promptMe",
+          detectedLanguage:
+            state.preferences?.lang ||
+            state.operatingMode?.detectedLanguage ||
+            "en",
+          autoDetectLanguage: state.preferences?.autoDetectLanguage ?? true,
+          isSuccinctMode: profile.interactionStyle === "succinct",
+          debugLevel:
+            state.preferences?.debugLevel ??
+            state.operatingMode?.debugLevel ??
+            1,
+          authRequiredOnStart: value === "letMeServeYou",
+          updatedAt: new Date().toISOString(),
+        };
+        saveState(paths.statePath, state);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[32m✔ Learned interaction style preference: ${profile.interactionStyle}\x1b[0m`,
+        );
+        return true;
+      }
       if (key === "mode") {
-        runModeCommand([value || "promptMe"], rootDir);
+        const modeValue = (value || "promptMe").toString();
+        const state = loadState(paths.statePath);
+        const userId = state.activeUser?.userId ?? "user_local";
+        const profile = (state.userPreferences ?? []).find(
+          (p) => p.userId === userId,
+        ) || {
+          userId,
+          signalCount: 0,
+          updatedAt: new Date().toISOString(),
+        };
+        profile.interactionStyle =
+          modeValue === "letMeServeYou" ? "conversational" : "canonical";
+        state.userPreferences = [
+          ...(state.userPreferences ?? []).filter((p) => p.userId !== userId),
+          profile,
+        ];
+        state.operatingMode = {
+          currentMode: modeValue,
+          detectedLanguage:
+            state.preferences?.lang ||
+            state.operatingMode?.detectedLanguage ||
+            "en",
+          autoDetectLanguage: state.preferences?.autoDetectLanguage ?? true,
+          isSuccinctMode: false,
+          debugLevel:
+            state.preferences?.debugLevel ??
+            state.operatingMode?.debugLevel ??
+            1,
+          authRequiredOnStart: modeValue === "letMeServeYou",
+          updatedAt: new Date().toISOString(),
+        };
+        saveState(paths.statePath, state);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[32m✔ Preference saved (Global): mode = ${modeValue}\x1b[0m`,
+        );
         return true;
       }
       if (key === "role") {
@@ -702,40 +930,67 @@ function executePreferenceAction(
       }
       if (key === "api_key" || key === "gemini_api_key" || key === "key") {
         saveApiKey(value || "", rootDir);
-        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Saved API key preference.\x1b[0m`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[32m✔ Saved API key preference.\x1b[0m`,
+        );
         return true;
       }
       if (key === "alias") {
         const aliasName = options.name || targetId;
         const aliasTarget = options.target || options.value;
         if (!aliasName || !aliasTarget) {
-          writeOutput(OutputChannelEnum.USER_REPLY, `Usage: preference add --key alias --name <short> --target <canonical>`);
+          writeOutput(
+            OutputChannelEnum.USER_REPLY,
+            `Usage: preference add --key alias --name <short> --target <canonical>`,
+          );
           return false;
         }
         runAliasCommand(["add", aliasName, aliasTarget], rootDir);
         return true;
       }
-      if (key === "auto_sync_interval" || key === "sync_interval" || key === "autosync") {
+      if (
+        key === "auto_sync_interval" ||
+        key === "sync_interval" ||
+        key === "autosync"
+      ) {
         const mins = parseInt(value || "15", 10) || 15;
         const state = loadState(paths.statePath);
         state.preferences = state.preferences || {};
-        state.preferences.auto_sync_interval = { value: mins, enabled: mins > 0, updatedAt: new Date().toISOString() };
+        state.preferences.auto_sync_interval = {
+          value: mins,
+          enabled: mins > 0,
+          updatedAt: new Date().toISOString(),
+        };
         saveState(paths.statePath, state);
-        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Auto-Sync prompt interval set to ${mins} minute(s).\x1b[0m`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[32m✔ Auto-Sync prompt interval set to ${mins} minute(s).\x1b[0m`,
+        );
         return true;
       }
       if (key === "auto_sync_prompt") {
         const enabled = value !== "false" && value !== false;
         const state = loadState(paths.statePath);
         state.preferences = state.preferences || {};
-        state.preferences.auto_sync_prompt = { value: enabled, enabled: true, updatedAt: new Date().toISOString() };
+        state.preferences.auto_sync_prompt = {
+          value: enabled,
+          enabled: true,
+          updatedAt: new Date().toISOString(),
+        };
         saveState(paths.statePath, state);
-        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Auto-Sync prompt ${enabled ? "enabled" : "disabled"}.\x1b[0m`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[32m✔ Auto-Sync prompt ${enabled ? "enabled" : "disabled"}.\x1b[0m`,
+        );
         return true;
       }
       if (key === "social" || key === "socialmedia") {
         if (options.broadcast || options.message) {
-          runSocialMediaCommand(["broadcast", "--message", options.broadcast || options.message], rootDir);
+          runSocialMediaCommand(
+            ["broadcast", "--message", options.broadcast || options.message],
+            rootDir,
+          );
           return true;
         }
         const net = options.network || value;
@@ -758,7 +1013,8 @@ function executePreferenceAction(
         scopeId = options.project || options.projectId;
       }
 
-      const storageKey = scope === "global" ? key : `${scope}:${scopeId}:${key}`;
+      const storageKey =
+        scope === "global" ? key : `${scope}:${scopeId}:${key}`;
 
       const state = loadState(paths.statePath);
       state.preferences = state.preferences || {};
@@ -773,19 +1029,33 @@ function executePreferenceAction(
         updatedAt: new Date().toISOString(),
       };
       saveState(paths.statePath, state);
-      const scopeLabel = scope === "global" ? "Global" : `[${scope.toUpperCase()}: ${scopeId}]`;
-      writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Preference saved (${scopeLabel}): ${key} = ${value}\x1b[0m`);
+      const scopeLabel =
+        scope === "global" ? "Global" : `[${scope.toUpperCase()}: ${scopeId}]`;
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[32m✔ Preference saved (${scopeLabel}): ${key} = ${value}\x1b[0m`,
+      );
       return true;
     }
 
     case "enable": {
       if (!key) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `Usage: preference enable --key <keyName> [--project|--workspace|--task <id>]`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `Usage: preference enable --key <keyName> [--project|--workspace|--task <id>]`,
+        );
         return false;
       }
-      const scope = options.task ? "task" : options.workspace ? "workspace" : options.project ? "project" : "global";
+      const scope = options.task
+        ? "task"
+        : options.workspace
+          ? "workspace"
+          : options.project
+            ? "project"
+            : "global";
       const scopeId = options.task || options.workspace || options.project;
-      const storageKey = scope === "global" ? key : `${scope}:${scopeId}:${key}`;
+      const storageKey =
+        scope === "global" ? key : `${scope}:${scopeId}:${key}`;
 
       const state = loadState(paths.statePath);
       state.preferences = state.preferences || {};
@@ -793,19 +1063,32 @@ function executePreferenceAction(
         state.preferences[storageKey].enabled = true;
         state.preferences[storageKey].updatedAt = new Date().toISOString();
         saveState(paths.statePath, state);
-        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Preference enabled: ${storageKey}\x1b[0m`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[32m✔ Preference enabled: ${storageKey}\x1b[0m`,
+        );
       }
       return true;
     }
 
     case "disable": {
       if (!key) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `Usage: preference disable --key <keyName> [--project|--workspace|--task <id>]`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `Usage: preference disable --key <keyName> [--project|--workspace|--task <id>]`,
+        );
         return false;
       }
-      const scope = options.task ? "task" : options.workspace ? "workspace" : options.project ? "project" : "global";
+      const scope = options.task
+        ? "task"
+        : options.workspace
+          ? "workspace"
+          : options.project
+            ? "project"
+            : "global";
       const scopeId = options.task || options.workspace || options.project;
-      const storageKey = scope === "global" ? key : `${scope}:${scopeId}:${key}`;
+      const storageKey =
+        scope === "global" ? key : `${scope}:${scopeId}:${key}`;
 
       const state = loadState(paths.statePath);
       state.preferences = state.preferences || {};
@@ -813,7 +1096,10 @@ function executePreferenceAction(
         state.preferences[storageKey].enabled = false;
         state.preferences[storageKey].updatedAt = new Date().toISOString();
         saveState(paths.statePath, state);
-        writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[33m✔ Preference disabled: ${storageKey}\x1b[0m`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\x1b[33m✔ Preference disabled: ${storageKey}\x1b[0m`,
+        );
       }
       return true;
     }
@@ -824,36 +1110,79 @@ function executePreferenceAction(
         runAliasCommand(["remove", aliasName], rootDir);
         return true;
       }
-      const scope = options.task ? "task" : options.workspace ? "workspace" : options.project ? "project" : "global";
+      const scope = options.task
+        ? "task"
+        : options.workspace
+          ? "workspace"
+          : options.project
+            ? "project"
+            : "global";
       const scopeId = options.task || options.workspace || options.project;
-      const storageKey = scope === "global" ? key : `${scope}:${scopeId}:${key}`;
+      const storageKey =
+        scope === "global" ? key : `${scope}:${scopeId}:${key}`;
 
       const state = loadState(paths.statePath);
       state.preferences = state.preferences || {};
       delete state.preferences[storageKey];
       saveState(paths.statePath, state);
-      writeOutput(OutputChannelEnum.USER_REPLY, `\x1b[32m✔ Preference removed: ${storageKey}\x1b[0m`);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\x1b[32m✔ Preference removed: ${storageKey}\x1b[0m`,
+      );
       return true;
     }
 
     case "list":
     default: {
       const state = loadState(paths.statePath);
-      writeOutput(OutputChannelEnum.USER_REPLY, `\n\x1b[36m=== INOU Active Preferences ===\x1b[0m`);
-      writeOutput(OutputChannelEnum.USER_REPLY, `  • Operating Mode: ${state.operatingMode?.currentMode || "promptMe"}`);
-      writeOutput(OutputChannelEnum.USER_REPLY, `  • Active Role: ${state.currentRole || "RegularUser"}`);
-      writeOutput(OutputChannelEnum.USER_REPLY, `  • Active User: ${state.activeUser?.userName || "System"}`);
-      writeOutput(OutputChannelEnum.USER_REPLY, `  • API Key: ${getStoredApiKey(rootDir) ? "Connected (****)" : "Not Set"}`);
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `\n\x1b[36m=== INOU Active Preferences ===\x1b[0m`,
+      );
+      const activeStyle =
+        (state.userPreferences ?? []).find(
+          (p) => p.userId === (state.activeUser?.userId ?? "user_local"),
+        )?.interactionStyle ?? "canonical";
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `  • Interaction Style: ${activeStyle}`,
+      );
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `  • Active Role: ${state.currentRole || "RegularUser"}`,
+      );
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `  • Active User: ${state.activeUser?.userName || "System"}`,
+      );
+      writeOutput(
+        OutputChannelEnum.USER_REPLY,
+        `  • API Key: ${getStoredApiKey(rootDir) ? "Connected (****)" : "Not Set"}`,
+      );
 
       const prefs = state.preferences || {};
-      const customKeys = Object.keys(prefs).filter((k) => !["lastSyncAt", "auto_sync_interval", "auto_sync_prompt"].includes(k));
+      const customKeys = Object.keys(prefs).filter(
+        (k) =>
+          !["lastSyncAt", "auto_sync_interval", "auto_sync_prompt"].includes(k),
+      );
       if (customKeys.length > 0) {
-        writeOutput(OutputChannelEnum.USER_REPLY, `\n\x1b[35m--- Custom & Scoped Preferences ---\x1b[0m`);
+        writeOutput(
+          OutputChannelEnum.USER_REPLY,
+          `\n\x1b[35m--- Custom & Scoped Preferences ---\x1b[0m`,
+        );
         customKeys.forEach((k) => {
           const item = prefs[k];
-          const sc = item.scope ? `[${item.scope.toUpperCase()}${item.scopeId ? ":" + item.scopeId : ""}]` : "[GLOBAL]";
-          const status = item.enabled !== false ? "\x1b[32m(Enabled)\x1b[0m" : "\x1b[31m(Disabled)\x1b[0m";
-          writeOutput(OutputChannelEnum.USER_REPLY, `  • ${sc} ${item.key || k} = ${JSON.stringify(item.value)} ${status}`);
+          const sc = item.scope
+            ? `[${item.scope.toUpperCase()}${item.scopeId ? ":" + item.scopeId : ""}]`
+            : "[GLOBAL]";
+          const status =
+            item.enabled !== false
+              ? "\x1b[32m(Enabled)\x1b[0m"
+              : "\x1b[31m(Disabled)\x1b[0m";
+          writeOutput(
+            OutputChannelEnum.USER_REPLY,
+            `  • ${sc} ${item.key || k} = ${JSON.stringify(item.value)} ${status}`,
+          );
         });
       }
       runAliasCommand(["list"], rootDir);

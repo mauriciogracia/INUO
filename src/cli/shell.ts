@@ -13,7 +13,10 @@ import {
   saveApiKey,
   processNaturalLanguageIntent,
 } from "./aiClient";
-import { checkAndApplySyncProtocol, runSelectiveSyncCommand } from "./syncEngine";
+import {
+  checkAndApplySyncProtocol,
+  runSelectiveSyncCommand,
+} from "./syncEngine";
 import { runEvolveCommand } from "./evolveCommand";
 import { runDetailCommand, runAnswerCommand } from "./detailCommand";
 import {
@@ -50,11 +53,13 @@ import { runMemberCommand } from "./memberCommand";
 import { runEngineCommand } from "./engineCommand";
 import { runAuthCommand } from "./authCommand";
 import { runThresholdCommand } from "./thresholdCommand";
-import { runModeCommand } from "./modeCommand";
 import { detectLanguage } from "./languageEngine";
 import {
   initiateHostGreeting,
   setInteractionLanguage,
+  setOperatingMode,
+  setSuccinctMode,
+  setDebugLevel,
 } from "./hostServiceEngine";
 import { runSocialCommand } from "./socialCommand";
 import { runQuestionCommand } from "./questionCommand";
@@ -82,7 +87,7 @@ import {
   normalizeSemanticEntity,
 } from "./semanticDispatcher";
 import { runAdaptiveCommand } from "./adaptiveEnvironmentEngine";
-
+import { renderCommandHelp } from "./autocomplete";
 
 export function tokenizeCommandLine(input: string): string[] {
   const tokens: string[] = [];
@@ -115,9 +120,79 @@ export async function executeShellLine(
   if (parts.length === 0) return;
   const cmd = parts[0].toLowerCase();
 
-
   // Check if first token is a canonical or localized Semantic Entity
-  if (normalizeSemanticEntity(cmd)) {
+  const builtInCommands = new Set([
+    "alias",
+    "learn",
+    "setup",
+    "tier",
+    "version",
+    "question",
+    "social",
+    "socialmedia",
+    "sn",
+    "auth",
+    "signin",
+    "login",
+    "signout",
+    "threshold",
+    "whoami",
+    "user",
+    "member",
+    "device",
+    "engine",
+    "mastermind",
+    "role",
+    "principle",
+    "behavior",
+    "skill",
+    "mcp",
+    "llm",
+    "node",
+    "colmena",
+    "forget",
+    "correct",
+    "export-training",
+    "merge-training",
+    "evolve",
+    "sync",
+    "serve",
+    "api",
+    "hub",
+    "adapt",
+    "adaptive",
+    "key",
+    "init",
+    "bootstrap",
+    "status",
+    "gc",
+    "browser",
+    "chrome",
+    "ai",
+    "catalog",
+    "need",
+    "offer",
+    "match",
+    "detail",
+    "answer",
+    "test",
+    "rollback",
+    "help",
+    "exit",
+    "quit",
+    "q",
+    "bye",
+    "goodbye",
+    "chao",
+    "chau",
+    "adios",
+    "ciao",
+    "sayonara",
+    "aufwiedersehen",
+    "mode",
+  ]);
+
+  if (!builtInCommands.has(cmd) && normalizeSemanticEntity(cmd)) {
     const semanticPayload = parseSemanticCommand(parts);
     if (semanticPayload) {
       const handled = await executeSemanticCommand(semanticPayload, rootDir);
@@ -161,29 +236,6 @@ export async function executeShellLine(
       runSocialMediaCommand(parts.slice(1), rootDir);
       break;
 
-    case "mode":
-      runModeCommand(parts.slice(1), rootDir);
-      break;
-
-    case "promptme":
-      runModeCommand(["promptMe"], rootDir);
-      break;
-
-    case "letmeserveyou":
-      runModeCommand(["letMeServeYou"], rootDir);
-      break;
-
-    case "succinct":
-    case "succinctmode":
-      runModeCommand(["succinct", ...parts.slice(1)], rootDir);
-      break;
-
-    case "debug":
-    case "debuglevel":
-    case "loglevel":
-      runModeCommand(["debug", ...parts.slice(1)], rootDir);
-      break;
-
     case "auth":
       runAuthCommand(parts.slice(1), rootDir);
       break;
@@ -201,6 +253,32 @@ export async function executeShellLine(
     case "threshold":
       runThresholdCommand(parts.slice(1), rootDir);
       break;
+
+    case "mode": {
+      const modeValue = parts[1]?.toLowerCase();
+      const debugValue = parts[2] ? Number(parts[2]) : undefined;
+      if (modeValue === "debug" && debugValue !== undefined) {
+        setDebugLevel(debugValue, rootDir);
+        break;
+      }
+      if (modeValue === "succinct") {
+        const enabled = parts[2]
+          ? !/^(off|false|0|disable|disabled)$/.test(parts[2].toLowerCase())
+          : true;
+        setSuccinctMode(enabled, rootDir);
+        break;
+      }
+      if (modeValue === "promptme" || modeValue === "promptme") {
+        setOperatingMode("promptMe", rootDir);
+        break;
+      }
+      if (modeValue === "letmeserveyou" || modeValue === "let-me-serve-you") {
+        setOperatingMode("letMeServeYou", rootDir);
+        break;
+      }
+      setOperatingMode(modeValue || "promptMe", rootDir);
+      break;
+    }
 
     case "whoami":
       runWhoamiCommand(rootDir);
@@ -296,20 +374,25 @@ export async function executeShellLine(
     case "serve":
     case "api":
     case "hub":
-      const port = parts[1] ? parseInt(parts[1], 10) : parseInt(process.env.PORT || "8765", 10);
+      const port = parts[1]
+        ? parseInt(parts[1], 10)
+        : parseInt(process.env.PORT || "8765", 10);
       const host = process.env.HOST || "0.0.0.0";
       const { ApiServer } = require("../api");
       const apiServer = new ApiServer(port, host, rootDir);
-      console.log(`Starting INUO Cloud Relay Hub & API Gateway on http://${host === "0.0.0.0" ? "127.0.0.1" : host}:${port}...`);
+      console.log(
+        `Starting INUO Cloud Relay Hub & API Gateway on http://${host === "0.0.0.0" ? "127.0.0.1" : host}:${port}...`,
+      );
       await apiServer.start();
-      console.log(`✔ [Cloud Relay Hub Active] Server listening on http://${host === "0.0.0.0" ? "127.0.0.1" : host}:${port}`);
+      console.log(
+        `✔ [Cloud Relay Hub Active] Server listening on http://${host === "0.0.0.0" ? "127.0.0.1" : host}:${port}`,
+      );
       break;
 
     case "adapt":
     case "adaptive":
       await runAdaptiveCommand(parts.slice(1), rootDir);
       break;
-
 
     case "key":
       if (!parts[1]) {
@@ -386,10 +469,7 @@ export async function executeShellLine(
       break;
 
     case "help":
-      writeOutput(
-        OutputChannelEnum.USER_REPLY,
-        `${TOOL_NAME} Supported Commands:\nneed create, offer create, match, detail, answer, llm add/list/remove/status, node add/list/update/remove, sn add/list/update/remove, social broadcast, status, catalog, version, mode, succinct, debug, auth, exit`,
-      );
+      writeOutput(OutputChannelEnum.USER_REPLY, renderCommandHelp());
       break;
 
     case "exit":
@@ -600,7 +680,11 @@ export async function dispatchSingleCommand(
 ): Promise<void> {
   checkAndApplySyncProtocol(rootDir);
   const line = args
-    .map((arg) => (arg.includes(" ") && !arg.startsWith('"') && !arg.startsWith("'") ? `"${arg}"` : arg))
+    .map((arg) =>
+      arg.includes(" ") && !arg.startsWith('"') && !arg.startsWith("'")
+        ? `"${arg}"`
+        : arg,
+    )
     .join(" ");
   const needsPrompter =
     args[0]?.toLowerCase() === "llm" && args[1]?.toLowerCase() === "add";
@@ -613,4 +697,3 @@ export async function dispatchSingleCommand(
     prompter?.close?.();
   }
 }
-

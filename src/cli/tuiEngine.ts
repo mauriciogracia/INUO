@@ -3,8 +3,8 @@ import { setOutputListener } from "./outputRouter";
 import { OutputChannelEnum } from "../enums/OutputChannelEnum";
 import { getProjectPaths, loadState } from "./context";
 import { getI18n } from "../i18n";
-import { OperatingModeConfig } from "../interfaces/OperatingModeConfig";
 import { LLMConfigurationPrompter } from "../interfaces/LLMConfigurationPrompter";
+import { completer } from "./autocomplete";
 
 export interface TUIRenderContext {
   version: string;
@@ -98,6 +98,7 @@ export class INUOTerminalUI {
       output: process.stdout,
       terminal: true,
       prompt: promptStr,
+      completer,
     });
 
     this.rl.prompt();
@@ -147,7 +148,7 @@ export class INUOTerminalUI {
       } else {
         const paths = getProjectPaths(this.rootDir);
         const state = loadState(paths.statePath);
-        const lang = state.operatingMode?.detectedLanguage || "es";
+        const lang = (state as any).preferences?.lang || "es";
         const dict = getI18n(lang);
         console.log(`\n\x1b[33m${dict.farewell}\x1b[0m\n`);
         process.exit(0);
@@ -161,24 +162,17 @@ export class INUOTerminalUI {
 
     const paths = getProjectPaths(this.rootDir);
     const state = loadState(paths.statePath);
-    const modeConfig: OperatingModeConfig = state.operatingMode || {
-      currentMode: "promptMe",
-      detectedLanguage: "en",
-      autoDetectLanguage: true,
-      authRequiredOnStart: false,
-      updatedAt: new Date().toISOString(),
-    };
-
-    const lang = modeConfig.detectedLanguage || "en";
+    const lang = (state as any).preferences?.lang || "en";
     const dict = getI18n(lang);
-    const modeName = modeConfig.currentMode || "promptMe";
-    const succinctStr = modeConfig.isSuccinctMode !== false ? "ON" : "OFF";
-    const debugLvl =
-      modeConfig.debugLevel !== undefined ? modeConfig.debugLevel : 1;
+    const debugLvl = (state as any).operatingMode?.debugLevel ?? 1;
+    const userStyle =
+      (state.userPreferences ?? []).find(
+        (p) => p.userId === (state.activeUser?.userId ?? "user_local"),
+      )?.interactionStyle ?? "canonical";
 
     // 1. Draw Top Header Status Bar (Rows 1..3)
     let header = `\x1b[1;1H\x1b[2K\x1b[44m\x1b[37m\x1b[1m === ${dict.shellBanner.title} (v${this.version}) === \x1b[0m\n`;
-    header += `\x1b[2;1H\x1b[2K\x1b[36m[Mode: ${modeName}]\x1b[0m | \x1b[33m[Lang: ${lang.toUpperCase()}]\x1b[0m | \x1b[32m[Succinct: ${succinctStr}]\x1b[0m | \x1b[35m[Debug: ${debugLvl}]\x1b[0m\n`;
+    header += `\x1b[2;1H\x1b[2K\x1b[33m[Lang: ${lang.toUpperCase()}]\x1b[0m | \x1b[32m[Style: ${userStyle}]\x1b[0m | \x1b[35m[Debug: ${debugLvl}]\x1b[0m\n`;
     header += `\x1b[3;1H\x1b[2K\x1b[90m${"─".repeat(cols)}\x1b[0m`;
     process.stdout.write(header);
 

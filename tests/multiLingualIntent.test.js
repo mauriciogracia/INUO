@@ -54,27 +54,21 @@ test("Multi-Lingual Intent & Language Detection Unit Tests (4 Languages)", async
   await t.test(
     "provides localized host greetings across all 4 languages",
     () => {
-      const esHost = getLocalizedHostGreeting("letMeServeYou", "es", "Sofia");
-      assert.match(esHost.greetingText, /¡Buenos días Sofia!/);
-      assert.match(
-        esHost.promptWhoAreYouText,
-        /¿Me permite saber quién nos acompaña/,
-      );
+      const esHost = getLocalizedHostGreeting("es", "Sofia");
+      assert.match(esHost.greetingText, /INUO/i);
+      assert.match(esHost.greetingText, /Sofia|¿En qué puedo ayudarle/i);
 
-      const frHost = getLocalizedHostGreeting("letMeServeYou", "fr", "Jean");
-      assert.match(frHost.greetingText, /Bonjour Jean/);
-      assert.match(
-        frHost.promptWhoAreYouText,
-        /Puis-je savoir qui nous rejoint/,
-      );
+      const frHost = getLocalizedHostGreeting("fr", "Jean");
+      assert.match(frHost.greetingText, /INUO/i);
+      assert.match(frHost.greetingText, /Comment puis-je|Jean/i);
 
-      const deHost = getLocalizedHostGreeting("letMeServeYou", "de", "Klaus");
-      assert.match(deHost.greetingText, /Guten Tag Klaus!/);
-      assert.match(deHost.promptWhoAreYouText, /Darf ich erfahren, wer heute/);
+      const deHost = getLocalizedHostGreeting("de", "Klaus");
+      assert.match(deHost.greetingText, /INUO/i);
+      assert.match(deHost.greetingText, /Wie kann ich Ihnen|Klaus/i);
 
-      const ptHost = getLocalizedHostGreeting("letMeServeYou", "pt", "Lucas");
-      assert.match(ptHost.greetingText, /Bom dia Lucas!/);
-      assert.match(ptHost.promptWhoAreYouText, /Posso saber quem está conosco/);
+      const ptHost = getLocalizedHostGreeting("pt", "Lucas");
+      assert.match(ptHost.greetingText, /INUO/i);
+      assert.match(ptHost.greetingText, /Como posso ajudá|Lucas/i);
     },
   );
 

@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const commandForm = document.getElementById("command-form");
     const commandInput = document.getElementById("command-input");
     const systemVersionEl = document.getElementById("system-version");
-    const modeSelect = document.getElementById("mode-select");
+    const modeSelect = null; // mode selector removed — intent is now detected from NL context
     const statusSuccinctEl = document.getElementById("status-succinct");
     const statusDebugEl = document.getElementById("status-debug");
     const statusAiEl = document.getElementById("status-ai");
@@ -13,7 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const badgeThinking = document.getElementById("badge-thinking");
     const badgeDebug = document.getElementById("badge-debug");
     const tabBtns = document.querySelectorAll(".tab-btn");
-    const labelMode = document.getElementById("label-mode");
     const labelSuccinct = document.getElementById("label-succinct");
     const labelDebugEl = document.getElementById("label-debug");
     const tabMainEl = document.getElementById("tab-main");
@@ -101,16 +100,12 @@ document.addEventListener("DOMContentLoaded", () => {
         tabMainEl.textContent = uiStrings.tabMain;
         tabThinkingEl.textContent = uiStrings.tabThinking;
         tabDebugEl.textContent = uiStrings.tabDebug;
-        labelMode.textContent = uiStrings.pillMode;
         labelSuccinct.textContent = uiStrings.pillSuccinct;
         labelDebugEl.textContent = uiStrings.pillDebug;
         labelAiEl.textContent = uiStrings.pillAi;
         sendBtnText.textContent = uiStrings.send;
         commandInput.placeholder = uiStrings.placeholder;
         systemConnectedMsg.textContent = uiStrings.connected;
-        Array.from(modeSelect.options).forEach((opt) => {
-            opt.text = uiStrings.modeNames[opt.value] ?? opt.value;
-        });
     }
     // 2. Fetch System Status
     async function fetchStatus() {
@@ -119,7 +114,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (res.ok) {
                 const data = (await res.json());
                 systemVersionEl.textContent = `v${data.version}`;
-                modeSelect.value = data.mode;
                 applyTranslations(data.lang);
                 statusSuccinctEl.textContent = data.succinct ? "ON" : "OFF";
                 statusDebugEl.textContent = `Level ${data.debugLevel}`;
@@ -152,6 +146,18 @@ document.addEventListener("DOMContentLoaded", () => {
                     window.location.reload();
                 }
                 knownServerStartTime = data.serverStartTime ?? null;
+                return;
+            }
+            // Handle intent clarification widget
+            if (data.channel === "CLARIFICATION") {
+                try {
+                    const clarification = JSON.parse(data.content);
+                    renderClarificationWidget(clarification);
+                }
+                catch {
+                    // If CLARIFICATION payload is malformed, fall through to appendLog
+                    appendLog(data.channel, data.content);
+                }
                 return;
             }
             appendLog(data.channel, data.content);
@@ -360,21 +366,74 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!command)
             return;
         commandInput.value = "";
+        dismissClarificationWidget();
         await sendCommand(command);
     });
-    // 6. Mode Selector Change
-    modeSelect.addEventListener("change", async () => {
-        const selectedMode = modeSelect.value;
-        try {
-            await fetch("/api/command", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ command: `mode ${selectedMode}` }),
+    // 6. Intent Clarification Widget
+    function renderClarificationWidget(clarification) {
+        dismissClarificationWidget();
+        const template = document.getElementById("clarification-widget-template");
+        if (!template)
+            return;
+        const clone = template.content.cloneNode(true);
+        const widget = clone.querySelector(".clarification-widget");
+        if (!widget)
+            return;
+        // Set question text from i18n
+        const questionEl = widget.querySelector("#clarification-question-text");
+        if (questionEl)
+            questionEl.textContent = uiStrings.clarificationQuestion;
+        // Render radio-style option buttons
+        const optionsContainer = widget.querySelector("#clarification-options");
+        if (optionsContainer) {
+            clarification.options.forEach((opt) => {
+                const label = uiStrings.styleOptionLabels[opt.value] ?? opt.label;
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "clarification-option-btn";
+                btn.dataset["value"] = opt.value;
+                btn.dataset["contextKey"] = clarification.contextKey;
+                btn.textContent = label;
+                btn.addEventListener("click", () => {
+                    dismissClarificationWidget();
+                    void sendCommand(`style ${opt.value}`);
+                });
+                optionsContainer.appendChild(btn);
             });
-            await fetchStatus();
         }
-        catch (err) {
-            console.error("Mode update error:", err);
+        // Write-in placeholder from i18n
+        const writeInInput = widget.querySelector("#clarification-writein-input");
+        if (writeInInput) {
+            writeInInput.placeholder = uiStrings.clarificationWriteIn;
         }
-    });
+        // Submit button from i18n
+        const submitBtn = widget.querySelector("#clarification-submit-btn");
+        if (submitBtn) {
+            submitBtn.textContent = uiStrings.clarificationSubmit;
+            submitBtn.addEventListener("click", () => {
+                const val = writeInInput?.value.trim() ?? "";
+                if (val) {
+                    dismissClarificationWidget();
+                    void sendCommand(val);
+                }
+            });
+        }
+        // Allow Enter in write-in to submit
+        writeInInput?.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                const val = writeInInput.value.trim();
+                if (val) {
+                    dismissClarificationWidget();
+                    void sendCommand(val);
+                }
+            }
+        });
+        logViewport.appendChild(widget);
+        logViewport.scrollTop = logViewport.scrollHeight;
+        writeInInput?.focus();
+    }
+    function dismissClarificationWidget() {
+        const existing = document.getElementById("clarification-widget");
+        existing?.remove();
+    }
 });

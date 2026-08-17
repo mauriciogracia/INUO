@@ -19,7 +19,6 @@ export * from './DeviceTypeEnum';
 export * from './EmergencyStatusEnum';
 export * from './RelationshipTypeEnum';
 export * from './AuthMethodEnum';
-export * from './OperatingModeEnum';
 export * from './QuestionOptionTypeEnum';
 export * from './LogLevelEnum';
 export * from './OutputChannelEnum';

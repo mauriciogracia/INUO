@@ -11,8 +11,10 @@ import { Behavior } from "../interfaces/Behavior";
 import { Rule } from "../interfaces/Rule";
 import { Principle } from "../interfaces/Principle";
 import { UserRole } from "../types/UserRole";
-import { persistStateToSqlite, rehydrateStateFromSqlite } from "./sqliteStorageEngine";
-
+import {
+  persistStateToSqlite,
+  rehydrateStateFromSqlite,
+} from "./sqliteStorageEngine";
 
 export function getProjectPaths(rootDir: string = process.cwd()) {
   const techSpec = path.join(rootDir, "tech-specs", "main-specs-goals.md");
@@ -27,7 +29,9 @@ export function getProjectPaths(rootDir: string = process.cwd()) {
   const customDataDir = process.env.INUO_DATA_DIR || process.env.DATA_DIR;
   let statePath = path.join(rootDir, ".inuo-state.json");
   if (customDataDir) {
-    const resolvedDir = path.isAbsolute(customDataDir) ? customDataDir : path.resolve(rootDir, customDataDir);
+    const resolvedDir = path.isAbsolute(customDataDir)
+      ? customDataDir
+      : path.resolve(rootDir, customDataDir);
     if (!fs.existsSync(resolvedDir)) {
       try {
         fs.mkdirSync(resolvedDir, { recursive: true });
@@ -70,7 +74,6 @@ import { TrustedMemberConfig } from "../interfaces/TrustedMemberConfig";
 import { EngineConfig } from "../interfaces/EngineConfig";
 import { BiometricVaultEntry } from "../interfaces/BiometricVaultEntry";
 import { TrustThresholdGate } from "../interfaces/TrustThresholdGate";
-import { OperatingModeConfig } from "../interfaces/OperatingModeConfig";
 import { InteractiveQuestionSpec } from "../interfaces/InteractiveQuestionSpec";
 import { MasterMindSyncProgress } from "../interfaces/MasterMindSyncProgress";
 import { UserPreferenceProfile } from "../interfaces/UserPreferenceProfile";
@@ -103,7 +106,7 @@ export interface StateData {
   engines?: EngineConfig[];
   localAuthVault?: BiometricVaultEntry[];
   thresholdGates?: TrustThresholdGate[];
-  operatingMode?: OperatingModeConfig;
+  operatingMode?: any;
   interactiveQuestions?: InteractiveQuestionSpec[];
   progressiveSyncs?: MasterMindSyncProgress[];
   userPreferences?: UserPreferenceProfile[];
@@ -244,6 +247,63 @@ export const BASELINE_BEHAVIORS: Behavior[] = [
   },
 ];
 
+function migrateLegacyOperatingMode(
+  state: Partial<StateData>,
+): Partial<StateData> {
+  if (!state.operatingMode && !state.userPreferences) return state;
+
+  const legacy = state.operatingMode as any;
+  const activeUserId = state.activeUser?.userId ?? "user_local";
+  const userPreferences = Array.isArray(state.userPreferences)
+    ? [...state.userPreferences]
+    : [];
+
+  const profile = userPreferences.find((p) => p.userId === activeUserId) || {
+    userId: activeUserId,
+    signalCount: 0,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (legacy?.isSuccinctMode === true && !profile.interactionStyle) {
+    profile.interactionStyle = "succinct";
+  }
+  if (legacy?.currentMode === "letMeServeYou" && !profile.interactionStyle) {
+    profile.interactionStyle = "conversational";
+  }
+  if (legacy?.currentMode === "promptMe" && !profile.interactionStyle) {
+    profile.interactionStyle = "canonical";
+  }
+
+  if (profile.interactionStyle && !profile.styleSignals) {
+    profile.styleSignals = [
+      {
+        detectedStyle: profile.interactionStyle,
+        sourceText: "legacy operating mode migration",
+        confidence: 1,
+        capturedAt: new Date().toISOString(),
+      },
+    ];
+  }
+
+  if (!userPreferences.some((p) => p.userId === activeUserId)) {
+    userPreferences.push(profile);
+  }
+
+  state.userPreferences = userPreferences;
+  state.operatingMode = {
+    currentMode: legacy?.currentMode || "promptMe",
+    detectedLanguage:
+      legacy?.detectedLanguage || state.preferences?.lang || "en",
+    autoDetectLanguage: legacy?.autoDetectLanguage ?? true,
+    isSuccinctMode:
+      legacy?.isSuccinctMode ?? profile.interactionStyle === "succinct",
+    debugLevel: legacy?.debugLevel ?? state.preferences?.debugLevel ?? 1,
+    authRequiredOnStart: legacy?.authRequiredOnStart ?? false,
+    updatedAt: legacy?.updatedAt || new Date().toISOString(),
+  };
+  return state;
+}
+
 export function loadState(statePath: string): StateData {
   const defaultUser: UserIdentity = {
     userId: "user_local_1",
@@ -252,174 +312,167 @@ export function loadState(statePath: string): StateData {
     authenticatedAt: new Date().toISOString(),
   };
 
-  const defaultMode: OperatingModeConfig = {
-    currentMode: "promptMe",
-    detectedLanguage: "es",
-    autoDetectLanguage: true,
-    isSuccinctMode: true,
-    debugLevel: 3,
-    authRequiredOnStart: false,
-    updatedAt: new Date().toISOString(),
-  };
-
   if (!fs.existsSync(statePath)) {
     const sqliteRehydrated = rehydrateStateFromSqlite(path.dirname(statePath));
-    return {
-      needs: sqliteRehydrated?.needs || [],
-      offers: [],
-      matches: [],
-      customVerbs: [],
-      doubts: [],
-      currentRole: "RegularUser",
-      activeUser: defaultUser,
-      learnedCorrections: [],
-      skills: [...BASELINE_SKILLS],
-      behaviors: [...BASELINE_BEHAVIORS],
-      rules: [],
-      principles: [...BASELINE_PRINCIPLES],
-      mcpServers: [],
-      colmenaNodes: [],
-      trustRecords: [],
-      masterMindId: "master_mind_primary",
-      clientDevices: [],
-      emergencyContext: {
-        status: "Normal",
-        authorizedFamilyUserIds: [],
-        activatedAt: new Date().toISOString(),
-      },
-      trustedMembers: [],
-      engines: [...BASELINE_ENGINES],
-      localAuthVault: [],
-      thresholdGates: [],
-      operatingMode: defaultMode,
-      interactiveQuestions: [],
-      progressiveSyncs: [],
-      userPreferences: [],
-      llmConfigurations: [],
-      workflowNodes: sqliteRehydrated?.workflowNodes || [],
-      socialNetworkConfigurations: [],
-      costGovernance: undefined,
-      aliases: [],
-      projects: sqliteRehydrated?.projects || [],
-      workspaces: sqliteRehydrated?.workspaces || [],
-      activeProject: undefined,
-      activeWorkspace: undefined,
-      preferences: sqliteRehydrated?.preferences || {},
-    };
+    const migrated = migrateLegacyOperatingMode({
+      ...({
+        needs: sqliteRehydrated?.needs || [],
+        offers: [],
+        matches: [],
+        customVerbs: [],
+        doubts: [],
+        currentRole: "RegularUser",
+        activeUser: defaultUser,
+        learnedCorrections: [],
+        skills: [...BASELINE_SKILLS],
+        behaviors: [...BASELINE_BEHAVIORS],
+        rules: [],
+        principles: [...BASELINE_PRINCIPLES],
+        mcpServers: [],
+        colmenaNodes: [],
+        trustRecords: [],
+        masterMindId: "master_mind_primary",
+        clientDevices: [],
+        emergencyContext: {
+          status: "Normal",
+          authorizedFamilyUserIds: [],
+          activatedAt: new Date().toISOString(),
+        },
+        trustedMembers: [],
+        engines: [...BASELINE_ENGINES],
+        localAuthVault: [],
+        thresholdGates: [],
+        interactiveQuestions: [],
+        progressiveSyncs: [],
+        userPreferences: [],
+        llmConfigurations: [],
+        workflowNodes: sqliteRehydrated?.workflowNodes || [],
+        socialNetworkConfigurations: [],
+        costGovernance: undefined,
+        aliases: [],
+        projects: sqliteRehydrated?.projects || [],
+        workspaces: sqliteRehydrated?.workspaces || [],
+        activeProject: undefined,
+        activeWorkspace: undefined,
+        preferences: sqliteRehydrated?.preferences || {},
+      } as StateData),
+    });
+    return migrated as StateData;
   }
   try {
     const raw = fs.readFileSync(statePath, "utf8");
     const parsed = JSON.parse(raw) as StateData;
+    const migrated = migrateLegacyOperatingMode(parsed) as StateData;
     return {
-      needs: parsed.needs || [],
-      offers: parsed.offers || [],
-      matches: parsed.matches || [],
-      customVerbs: parsed.customVerbs || [],
-      doubts: parsed.doubts || [],
-      currentRole: parsed.currentRole || "RegularUser",
-      activeUser: parsed.activeUser || defaultUser,
-      learnedCorrections: parsed.learnedCorrections || [],
+      needs: migrated.needs || [],
+      offers: migrated.offers || [],
+      matches: migrated.matches || [],
+      customVerbs: migrated.customVerbs || [],
+      doubts: migrated.doubts || [],
+      currentRole: migrated.currentRole || "RegularUser",
+      activeUser: migrated.activeUser || defaultUser,
+      learnedCorrections: migrated.learnedCorrections || [],
       skills:
-        parsed.skills && parsed.skills.length > 0
-          ? parsed.skills
+        migrated.skills && migrated.skills.length > 0
+          ? migrated.skills
           : [...BASELINE_SKILLS],
       behaviors:
-        parsed.behaviors && parsed.behaviors.length > 0
-          ? parsed.behaviors
+        migrated.behaviors && migrated.behaviors.length > 0
+          ? migrated.behaviors
           : [...BASELINE_BEHAVIORS],
-      rules: parsed.rules || [],
+      rules: migrated.rules || [],
       principles:
-        parsed.principles && parsed.principles.length > 0
-          ? parsed.principles
+        migrated.principles && migrated.principles.length > 0
+          ? migrated.principles
           : [...BASELINE_PRINCIPLES],
-      mcpServers: parsed.mcpServers || [],
-      colmenaNodes: parsed.colmenaNodes || [],
-      trustRecords: parsed.trustRecords || [],
-      masterMindId: parsed.masterMindId || "master_mind_primary",
-      clientDevices: parsed.clientDevices || [],
-      emergencyContext: parsed.emergencyContext || {
+      mcpServers: migrated.mcpServers || [],
+      colmenaNodes: migrated.colmenaNodes || [],
+      trustRecords: migrated.trustRecords || [],
+      masterMindId: migrated.masterMindId || "master_mind_primary",
+      clientDevices: migrated.clientDevices || [],
+      emergencyContext: migrated.emergencyContext || {
         status: "Normal",
         authorizedFamilyUserIds: [],
         activatedAt: new Date().toISOString(),
       },
-      trustedMembers: parsed.trustedMembers || [],
+      trustedMembers: migrated.trustedMembers || [],
       engines:
-        parsed.engines && parsed.engines.length > 0
-          ? parsed.engines
+        migrated.engines && migrated.engines.length > 0
+          ? migrated.engines
           : [...BASELINE_ENGINES],
-      localAuthVault: parsed.localAuthVault || [],
-      thresholdGates: parsed.thresholdGates || [],
-      operatingMode: parsed.operatingMode || defaultMode,
-      interactiveQuestions: parsed.interactiveQuestions || [],
-      progressiveSyncs: parsed.progressiveSyncs || [],
-      userPreferences: parsed.userPreferences || [],
-      llmConfigurations: parsed.llmConfigurations || [],
-      workflowNodes: parsed.workflowNodes || [],
-      socialNetworkConfigurations: parsed.socialNetworkConfigurations || [],
-      costGovernance: parsed.costGovernance,
-      aliases: parsed.aliases || [],
-      projects: parsed.projects || [],
-      workspaces: parsed.workspaces || [],
-      activeProject: parsed.activeProject,
-      activeWorkspace: parsed.activeWorkspace,
-      preferences: parsed.preferences || {},
+      localAuthVault: migrated.localAuthVault || [],
+      thresholdGates: migrated.thresholdGates || [],
+      operatingMode: migrated.operatingMode,
+      interactiveQuestions: migrated.interactiveQuestions || [],
+      progressiveSyncs: migrated.progressiveSyncs || [],
+      userPreferences: migrated.userPreferences || [],
+      llmConfigurations: migrated.llmConfigurations || [],
+      workflowNodes: migrated.workflowNodes || [],
+      socialNetworkConfigurations: migrated.socialNetworkConfigurations || [],
+      costGovernance: migrated.costGovernance,
+      aliases: migrated.aliases || [],
+      projects: migrated.projects || [],
+      workspaces: migrated.workspaces || [],
+      activeProject: migrated.activeProject,
+      activeWorkspace: migrated.activeWorkspace,
+      preferences: migrated.preferences || {},
     };
   } catch {
     const sqliteRehydrated = rehydrateStateFromSqlite(path.dirname(statePath));
-    return {
-      needs: sqliteRehydrated?.needs || [],
-      offers: [],
-      matches: [],
-      customVerbs: [],
-      doubts: [],
-      currentRole: "RegularUser",
-      activeUser: defaultUser,
-      learnedCorrections: [],
-      skills: [...BASELINE_SKILLS],
-      behaviors: [...BASELINE_BEHAVIORS],
-      rules: [],
-      principles: [...BASELINE_PRINCIPLES],
-      mcpServers: [],
-      colmenaNodes: [],
-      trustRecords: [],
-      masterMindId: "master_mind_primary",
-      clientDevices: [],
-      emergencyContext: {
-        status: "Normal",
-        authorizedFamilyUserIds: [],
-        activatedAt: new Date().toISOString(),
-      },
-      trustedMembers: [],
-      engines: [...BASELINE_ENGINES],
-      localAuthVault: [],
-      thresholdGates: [],
-      operatingMode: defaultMode,
-      interactiveQuestions: [],
-      progressiveSyncs: [],
-      userPreferences: [],
-      llmConfigurations: [],
-      workflowNodes: sqliteRehydrated?.workflowNodes || [],
-      socialNetworkConfigurations: [],
-      costGovernance: undefined,
-      aliases: [],
-      projects: sqliteRehydrated?.projects || [],
-      workspaces: sqliteRehydrated?.workspaces || [],
-      activeProject: undefined,
-      activeWorkspace: undefined,
-      preferences: sqliteRehydrated?.preferences || {},
-    };
+    const migrated = migrateLegacyOperatingMode({
+      ...({
+        needs: sqliteRehydrated?.needs || [],
+        offers: [],
+        matches: [],
+        customVerbs: [],
+        doubts: [],
+        currentRole: "RegularUser",
+        activeUser: defaultUser,
+        learnedCorrections: [],
+        skills: [...BASELINE_SKILLS],
+        behaviors: [...BASELINE_BEHAVIORS],
+        rules: [],
+        principles: [...BASELINE_PRINCIPLES],
+        mcpServers: [],
+        colmenaNodes: [],
+        trustRecords: [],
+        masterMindId: "master_mind_primary",
+        clientDevices: [],
+        emergencyContext: {
+          status: "Normal",
+          authorizedFamilyUserIds: [],
+          activatedAt: new Date().toISOString(),
+        },
+        trustedMembers: [],
+        engines: [...BASELINE_ENGINES],
+        localAuthVault: [],
+        thresholdGates: [],
+        interactiveQuestions: [],
+        progressiveSyncs: [],
+        userPreferences: [],
+        llmConfigurations: [],
+        workflowNodes: sqliteRehydrated?.workflowNodes || [],
+        socialNetworkConfigurations: [],
+        costGovernance: undefined,
+        aliases: [],
+        projects: sqliteRehydrated?.projects || [],
+        workspaces: sqliteRehydrated?.workspaces || [],
+        activeProject: undefined,
+        activeWorkspace: undefined,
+        preferences: sqliteRehydrated?.preferences || {},
+      } as StateData),
+    });
+    return migrated as StateData;
   }
 }
 
 export function saveState(statePath: string, data: StateData): void {
-
   // 1. Dual-Write: Export formatted JSON snapshot for Git inspection
   fs.writeFileSync(statePath, JSON.stringify(data, null, 2), "utf8");
 
   // 2. Write-Through: Persist into L2 SQLite WAL database (.inuo.db)
   persistStateToSqlite(data, path.dirname(statePath));
 }
-
 
 export function createContext(
   rootDir: string = process.cwd(),

@@ -5,6 +5,7 @@ export const frDictionary: I18nDictionary = {
   shellBanner: {
     title: 'Shell Interactif INUO',
     protocolSync: 'Statut de synchronisation du protocole : Synchronisé',
+    greeting: 'INUO actif. Entrez votre commande ou votre objectif.',
   },
   farewell: 'Fermeture du shell INUO. Au revoir !',
   systemOverview: {
@@ -15,14 +16,7 @@ export const frDictionary: I18nDictionary = {
     decentralizedGovernance: 'Gouvernance et Confiance Décentralisées : Applique des disjoncteurs en millisecondes et un consensus multipartite.',
   },
   hostGreeting: {
-    promptMe: {
-      greetingText: 'INUO (Mode Direct / promptMe) actif. Entrez votre commande.',
-      promptWhoAreYouText: 'Identité active :',
-    },
-    letMeServeYou: {
-      greetingText: 'Bonjour{name} ! Bienvenue sur INUO. C\'est un honneur de vous servir aujourd\'hui.',
-      promptWhoAreYouText: 'Puis-je savoir qui nous rejoint aujourd\'hui pour vous offrir une assistance personnalisée ?',
-    },
+    greeting: 'Bienvenue sur INUO. Comment puis-je vous aider aujourd\'hui ?',
   },
   intentParser: {
     analyzing: '[Analyseur d\'Intention AI Gemini] Analyse de l\'intention en langage naturel...',
@@ -34,11 +28,23 @@ export const frDictionary: I18nDictionary = {
     parsedAnswer: '✔ Réponse de Connaissance Traitée :',
     parsedCorrection: '✔ Correction Utilisateur Traitée :',
   },
+  style: {
+    styleDetected: '✔ J\'ai noté que vous préférez des réponses {style}. Je vais continuer ainsi.',
+    styleLearned: '✔ Compris. Je me souviendrai de votre préférence.',
+    clarificationQuestion: 'Quel type de réponse recherchez-vous ?',
+    clarificationWriteIn: 'Décrivez votre préférence...',
+    optionLabels: {
+      canonical: 'Canonique',
+      succinct: 'Succinct',
+      detailed: 'Détaillé',
+      factual: 'Vérification des faits',
+      conversational: 'Conversationnel',
+    },
+  },
   mode: {
     succinctEnabled: '✔ [Mode Succinct] ACTIVÉ (Réponses concises, puces uniquement, sans tableaux).',
     succinctDisabled: '✔ [Mode Succinct] DÉSACTIVÉ (Réponses détaillées standard).',
     debugLevelSet: '✔ [Niveau de Débogage] Niveau de verbosité système défini sur',
-    operatingModeChanged: '✔ [Mode Opérationnel INUO Modifié] Passé au mode :',
     languageSet: '✔ [Détermination de la Langue] Langue d\'interaction définie sur :',
   },
   errors: {

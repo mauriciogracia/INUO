@@ -6,7 +6,6 @@ import { setOutputListener } from "./outputRouter";
 import { OutputChannelEnum } from "../enums/OutputChannelEnum";
 import { calculateInuoVersion } from "./versionEngine";
 import { getProjectPaths, loadState } from "./context";
-import { OperatingModeConfig } from "../interfaces/OperatingModeConfig";
 import { TOOL_NAME, TOOL_PROMPT } from "./brand";
 import { getSessionStats } from "./usageEngine";
 import {
@@ -89,21 +88,35 @@ export function startWebServer(options: WebServerOptions = {}): http.Server {
     const inuoVer = calculateInuoVersion(rootDir);
     const paths = getProjectPaths(rootDir);
     const state = loadState(paths.statePath);
-    const modeConfig: OperatingModeConfig = state.operatingMode || {
-      currentMode: "promptMe",
-      detectedLanguage: "en",
-      autoDetectLanguage: true,
-      authRequiredOnStart: false,
-      updatedAt: new Date().toISOString(),
-    };
+
+    // Resolve language — migrate from operatingMode if still present, else default to 'es'
+    const lang =
+      (state as any).operatingMode?.detectedLanguage ||
+      (state.preferences as any)?.lang ||
+      "es";
+
+    // Resolve debug level — migrate from operatingMode if still present
+    const debugLevel =
+      (state as any).operatingMode?.debugLevel !== undefined
+        ? (state as any).operatingMode.debugLevel
+        : 1;
+
+    // Resolve style from UserPreferenceProfile for the active user
+    const activeUserId = state.activeUser?.userId ?? "user_local";
+    const userPref = (state.userPreferences ?? []).find(
+      (p) => p.userId === activeUserId,
+    );
+    const userStyle = userPref?.interactionStyle;
+    const succinct =
+      userStyle === "succinct" ||
+      (state as any).operatingMode?.isSuccinctMode === true;
 
     res.json({
       version: inuoVer.fullVersionString,
-      mode: modeConfig.currentMode || "promptMe",
-      lang: modeConfig.detectedLanguage || "en",
-      succinct: modeConfig.isSuccinctMode !== false,
-      debugLevel:
-        modeConfig.debugLevel !== undefined ? modeConfig.debugLevel : 1,
+      lang,
+      succinct,
+      debugLevel,
+      userStyle,
       aiUsage: (({ requestCount, totalTokens }) => ({
         requestCount,
         totalTokens,

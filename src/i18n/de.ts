@@ -5,6 +5,7 @@ export const deDictionary: I18nDictionary = {
   shellBanner: {
     title: 'Interaktive INUO-Shell',
     protocolSync: 'Protokoll-Synchronisationsstatus: Synchronisiert',
+    greeting: 'INUO aktiv. Geben Sie Ihren Befehl oder Ihr Ziel ein.',
   },
   farewell: 'INUO-Shell wird beendet. Auf Wiedersehen!',
   systemOverview: {
@@ -15,14 +16,7 @@ export const deDictionary: I18nDictionary = {
     decentralizedGovernance: 'Dezentrale Governance & Vertrauen: Erzwingt Millisekunden-Schutzschalter und Konsensprüfungen.',
   },
   hostGreeting: {
-    promptMe: {
-      greetingText: 'INUO (Direkter Modus / promptMe) aktiv. Geben Sie Ihren Befehl ein.',
-      promptWhoAreYouText: 'Aktive Identität:',
-    },
-    letMeServeYou: {
-      greetingText: 'Guten Tag{name}! Willkommen bei INUO. Es ist mir eine Ehre, Ihnen heute zu dienen.',
-      promptWhoAreYouText: 'Darf ich erfahren, wer heute bei uns ist, um Ihnen persönlichen Service zu bieten?',
-    },
+    greeting: 'Willkommen bei INUO. Wie kann ich Ihnen heute helfen?',
   },
   intentParser: {
     analyzing: '[Gemini AI Absichts-Parser] Analysiere natürliche Sprachabsicht...',
@@ -34,11 +28,23 @@ export const deDictionary: I18nDictionary = {
     parsedAnswer: '✔ AI Verarbeitete Wissensantwort:',
     parsedCorrection: '✔ AI Verarbeitete Korrektur:',
   },
+  style: {
+    styleDetected: '✔ Ich habe bemerkt, dass Sie {style} Antworten bevorzugen. Ich werde das beibehalten.',
+    styleLearned: '✔ Verstanden. Ich werde Ihre Präferenz speichern.',
+    clarificationQuestion: 'Welche Art von Antwort suchen Sie?',
+    clarificationWriteIn: 'Beschreiben Sie Ihre Präferenz...',
+    optionLabels: {
+      canonical: 'Kanonisch',
+      succinct: 'Knapp',
+      detailed: 'Detailliert',
+      factual: 'Faktenprüfung',
+      conversational: 'Konversationell',
+    },
+  },
   mode: {
     succinctEnabled: '✔ [Prägnanter Modus] AKTIVIERT (Kurze Antworten, nur Aufzählungspunkte, keine Tabellen).',
     succinctDisabled: '✔ [Prägnanter Modus] DEAKTIVIERT (Standardmäßige ausführliche Antworten).',
     debugLevelSet: '✔ [Debug-Stufe eingestellt] System-Debug-Ausführlichkeit eingestellt auf Stufe',
-    operatingModeChanged: '✔ [INUO-Betriebsmodus geändert] Gewechselt zu Modus:',
     languageSet: '✔ [Sprachbestimmung] Interaktionssprache eingestellt auf:',
   },
   errors: {

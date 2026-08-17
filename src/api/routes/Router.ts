@@ -15,7 +15,6 @@ import { SyncController } from "../controllers/SyncController";
 import { CommandController } from "../controllers/CommandController";
 import { calculateInuoVersion } from "../../cli/versionEngine";
 import { getProjectPaths, loadState } from "../../cli/context";
-import { OperatingModeConfig } from "../../interfaces/OperatingModeConfig";
 import { getSessionStats } from "../../cli/usageEngine";
 import {
   deleteLLMConfiguration,
@@ -66,7 +65,10 @@ export class Router {
     this.commandCtrl = new CommandController(rootDir);
   }
 
-  public async handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  public async handleRequest(
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> {
     // 1. CORS Preflight & Headers
     if (CorsMiddleware.handle(req, res)) return;
 
@@ -97,7 +99,9 @@ export class Router {
         bodyJson = JSON.parse(bodyText);
       } catch {
         res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: "Malformed JSON payload." }));
+        res.end(
+          JSON.stringify({ success: false, error: "Malformed JSON payload." }),
+        );
         return;
       }
     }
@@ -105,7 +109,11 @@ export class Router {
     // 6. REST Route Matrix
 
     // Health & Diagnostic Checks
-    if (pathname === "/health" || pathname === "/api/v1/health" || pathname === "/api/v1/status") {
+    if (
+      pathname === "/health" ||
+      pathname === "/api/v1/health" ||
+      pathname === "/api/v1/status"
+    ) {
       this.healthCtrl.getStatus(res);
       return;
     }
@@ -115,27 +123,24 @@ export class Router {
       const inuoVer = calculateInuoVersion(this.rootDir);
       const paths = getProjectPaths(this.rootDir);
       const state = loadState(paths.statePath);
-      const modeConfig: OperatingModeConfig = state.operatingMode || {
-        currentMode: "promptMe",
-        detectedLanguage: "en",
-        autoDetectLanguage: true,
-        authRequiredOnStart: false,
-        updatedAt: new Date().toISOString(),
-      };
+      const activeUserId = state.activeUser?.userId ?? "user_local";
+      const userPref = (state.userPreferences ?? []).find(
+        (p) => p.userId === activeUserId,
+      );
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
           version: inuoVer.fullVersionString,
-          mode: modeConfig.currentMode || "promptMe",
-          lang: modeConfig.detectedLanguage || "en",
-          succinct: modeConfig.isSuccinctMode !== false,
-          debugLevel: modeConfig.debugLevel !== undefined ? modeConfig.debugLevel : 1,
+          lang: (state as any).preferences?.lang || "es",
+          succinct: userPref?.interactionStyle === "succinct",
+          debugLevel: (state as any).operatingMode?.debugLevel ?? 1,
+          userStyle: userPref?.interactionStyle,
           aiUsage: (({ requestCount, totalTokens }) => ({
             requestCount,
             totalTokens,
           }))(getSessionStats()),
-        })
+        }),
       );
       return;
     }
@@ -144,20 +149,24 @@ export class Router {
     if (pathname === "/api/llm/configurations") {
       if (method === "GET") {
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ configurations: getLLMConfigurations(this.rootDir) }));
+        res.end(
+          JSON.stringify({
+            configurations: getLLMConfigurations(this.rootDir),
+          }),
+        );
         return;
       }
       if (method === "POST") {
         try {
           const forbiddenField = Object.keys(bodyJson || {}).find((key) =>
-            /api.?key|secret|token|password|credential/i.test(key)
+            /api.?key|secret|token|password|credential/i.test(key),
           );
           if (forbiddenField) {
             res.writeHead(400, { "Content-Type": "application/json" });
             res.end(
               JSON.stringify({
                 error: `Secret field "${forbiddenField}" is not accepted. Configure credentials in the provider environment.`,
-              })
+              }),
             );
             return;
           }
@@ -171,7 +180,7 @@ export class Router {
               supportsPlanMode: bodyJson.supportsPlanMode === true,
               supportsExecuteMode: bodyJson.supportsExecuteMode === true,
             },
-            this.rootDir
+            this.rootDir,
           );
           res.writeHead(201, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ status: "created", configuration }));
@@ -187,16 +196,24 @@ export class Router {
       }
     }
 
-    const llmDeleteMatch = pathname.match(/^\/api\/llm\/configurations\/([a-zA-Z0-9._-]+)$/);
+    const llmDeleteMatch = pathname.match(
+      /^\/api\/llm\/configurations\/([a-zA-Z0-9._-]+)$/,
+    );
     if (llmDeleteMatch && method === "DELETE") {
       const configName = decodeURIComponent(llmDeleteMatch[1]);
       if (!deleteLLMConfiguration(configName, this.rootDir)) {
         res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: `LLM configuration "${configName}" not found.` }));
+        res.end(
+          JSON.stringify({
+            error: `LLM configuration "${configName}" not found.`,
+          }),
+        );
         return;
       }
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ status: "removed", configurationName: configName }));
+      res.end(
+        JSON.stringify({ status: "removed", configurationName: configName }),
+      );
       return;
     }
 
@@ -206,7 +223,11 @@ export class Router {
         const apiKey = bodyJson?.apiKey;
         if (!apiKey || typeof apiKey !== "string") {
           res.writeHead(400, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Missing or invalid 'apiKey' field in request body." }));
+          res.end(
+            JSON.stringify({
+              error: "Missing or invalid 'apiKey' field in request body.",
+            }),
+          );
           return;
         }
         const result = await probeAndConfigureModels(apiKey, this.rootDir);
@@ -218,12 +239,16 @@ export class Router {
             workingPaid: result.workingPaid,
             maskedKey: maskApiKey(apiKey),
             message: result.message,
-          })
+          }),
         );
         return;
       } catch (err: any) {
         res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: err.message || "Failed to configure LLM setup." }));
+        res.end(
+          JSON.stringify({
+            error: err.message || "Failed to configure LLM setup.",
+          }),
+        );
         return;
       }
     }
@@ -233,13 +258,20 @@ export class Router {
       try {
         const command = (bodyJson?.command || "").trim();
         if (command) {
-          EventBus.getInstance().publish("output.message", "preference", "update", {
-            channel: OutputChannelEnum.USER_REPLY,
-            content: `${TOOL_PROMPT} ${command}`,
-            timestamp: new Date().toISOString(),
-          });
+          EventBus.getInstance().publish(
+            "output.message",
+            "preference",
+            "update",
+            {
+              channel: OutputChannelEnum.USER_REPLY,
+              content: `${TOOL_PROMPT} ${command}`,
+              timestamp: new Date().toISOString(),
+            },
+          );
 
-          const interactiveAdd = /^llm\s+add\s+([A-Za-z0-9._-]+)$/i.exec(command);
+          const interactiveAdd = /^llm\s+add\s+([A-Za-z0-9._-]+)$/i.exec(
+            command,
+          );
           if (bodyJson.uiMode === true && interactiveAdd) {
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(
@@ -249,7 +281,7 @@ export class Router {
                   type: "LLM_CONFIGURATION",
                   setup: getLLMProviderSetup(interactiveAdd[1]),
                 },
-              })
+              }),
             );
             return;
           }
@@ -260,11 +292,16 @@ export class Router {
         res.end(JSON.stringify({ status: "ok" }));
         return;
       } catch (err: any) {
-        EventBus.getInstance().publish("output.message", "preference", "update", {
-          channel: OutputChannelEnum.DEBUG,
-          content: `[Command Execution Error] ${err.message}`,
-          timestamp: new Date().toISOString(),
-        });
+        EventBus.getInstance().publish(
+          "output.message",
+          "preference",
+          "update",
+          {
+            channel: OutputChannelEnum.DEBUG,
+            content: `[Command Execution Error] ${err.message}`,
+            timestamp: new Date().toISOString(),
+          },
+        );
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: err.message }));
         return;
@@ -282,11 +319,14 @@ export class Router {
       if (method === "GET") return this.projectCtrl.list(res);
       if (method === "POST") return this.projectCtrl.create(bodyJson, res);
     }
-    const projectMatch = pathname.match(/^\/api\/v1\/projects?\/([a-zA-Z0-9_\-]+)$/);
+    const projectMatch = pathname.match(
+      /^\/api\/v1\/projects?\/([a-zA-Z0-9_\-]+)$/,
+    );
     if (projectMatch) {
       const id = projectMatch[1];
       if (method === "GET") return this.projectCtrl.getById(id, res);
-      if (method === "PUT" || method === "POST") return this.projectCtrl.update(id, bodyJson, res);
+      if (method === "PUT" || method === "POST")
+        return this.projectCtrl.update(id, bodyJson, res);
       if (method === "DELETE") return this.projectCtrl.remove(id, res);
     }
 
@@ -295,7 +335,9 @@ export class Router {
       if (method === "GET") return this.workspaceCtrl.list(res);
       if (method === "POST") return this.workspaceCtrl.create(bodyJson, res);
     }
-    const wsMatch = pathname.match(/^\/api\/v1\/workspaces?\/([a-zA-Z0-9_\-]+)$/);
+    const wsMatch = pathname.match(
+      /^\/api\/v1\/workspaces?\/([a-zA-Z0-9_\-]+)$/,
+    );
     if (wsMatch && method === "DELETE") {
       return this.workspaceCtrl.remove(wsMatch[1], res);
     }
@@ -309,18 +351,26 @@ export class Router {
     if (taskMatch) {
       const id = taskMatch[1];
       if (method === "GET") return this.taskCtrl.getById(id, res);
-      if (method === "PUT" || method === "POST") return this.taskCtrl.update(id, bodyJson, res);
+      if (method === "PUT" || method === "POST")
+        return this.taskCtrl.update(id, bodyJson, res);
       if (method === "DELETE") return this.taskCtrl.remove(id, res);
     }
 
     // Preferences
-    if (pathname === "/api/v1/preferences" || pathname === "/api/v1/preference") {
+    if (
+      pathname === "/api/v1/preferences" ||
+      pathname === "/api/v1/preference"
+    ) {
       if (method === "GET") return this.prefCtrl.list(res);
-      if (method === "POST" || method === "PUT") return this.prefCtrl.set(bodyJson, res);
+      if (method === "POST" || method === "PUT")
+        return this.prefCtrl.set(bodyJson, res);
     }
 
     // Integrations
-    if (pathname === "/api/v1/integrations" || pathname === "/api/v1/integration") {
+    if (
+      pathname === "/api/v1/integrations" ||
+      pathname === "/api/v1/integration"
+    ) {
       if (method === "GET") return this.integrationCtrl.list(res);
       if (method === "POST") return this.integrationCtrl.create(bodyJson, res);
     }
@@ -332,17 +382,24 @@ export class Router {
     }
     if (pathname === "/api/v1/sync/config") {
       if (method === "GET") return this.syncCtrl.getConfig(res);
-      if (method === "POST" || method === "PUT") return this.syncCtrl.updateConfig(bodyJson, res);
+      if (method === "POST" || method === "PUT")
+        return this.syncCtrl.updateConfig(bodyJson, res);
     }
 
     // 404 Fallback
     res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ success: false, error: `Route not found: ${method} ${pathname}` }));
+    res.end(
+      JSON.stringify({
+        success: false,
+        error: `Route not found: ${method} ${pathname}`,
+      }),
+    );
   }
 
   private serveStatic(pathname: string, res: ServerResponse): boolean {
     const publicDir = path.join(this.rootDir, "public");
-    let relativeFile = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+    let relativeFile =
+      pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
     const filePath = path.join(publicDir, relativeFile);
 
     // Prevent directory traversal

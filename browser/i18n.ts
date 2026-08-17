@@ -2,7 +2,6 @@ export interface WebUiStrings {
   tabMain: string;
   tabThinking: string;
   tabDebug: string;
-  pillMode: string;
   pillSuccinct: string;
   pillDebug: string;
   pillAi: string;
@@ -15,7 +14,14 @@ export interface WebUiStrings {
   errorServer: string;
   errorNetwork: string;
   retryBtn: string;
-  modeNames: Record<string, string>;
+  /** Label shown above the inline clarification widget */
+  clarificationQuestion: string;
+  /** Placeholder for the write-in input in the clarification widget */
+  clarificationWriteIn: string;
+  /** Submit button text in the clarification widget */
+  clarificationSubmit: string;
+  /** Localized labels for each interaction style option */
+  styleOptionLabels: Record<string, string>;
 }
 
 const strings: Record<string, WebUiStrings> = {
@@ -23,7 +29,6 @@ const strings: Record<string, WebUiStrings> = {
     tabMain: "💬 Conversación",
     tabThinking: "🧠 Pensando",
     tabDebug: "⚙ Depuración",
-    pillMode: "Modo:",
     pillSuccinct: "Conciso:",
     pillDebug: "Nivel:",
     pillAi: "AI:",
@@ -38,13 +43,21 @@ const strings: Record<string, WebUiStrings> = {
     errorNetwork:
       "No se pudo conectar con iNoU — revisa tu conexión o espera un momento y vuelve a intentarlo.",
     retryBtn: "↩ Reintentar",
-    modeNames: { promptMe: "Modo Directo", letMeServeYou: "Modo Servicio" },
+    clarificationQuestion: "¿Qué tipo de respuesta estás buscando?",
+    clarificationWriteIn: "Describe tu preferencia...",
+    clarificationSubmit: "Confirmar",
+    styleOptionLabels: {
+      canonical: "Canónico",
+      succinct: "Breve",
+      detailed: "Detallado",
+      factual: "Revisión de hechos",
+      conversational: "Conversacional",
+    },
   },
   en: {
     tabMain: "💬 Main Stream",
     tabThinking: "🧠 Thinking",
     tabDebug: "⚙ Debug Logs",
-    pillMode: "Mode:",
     pillSuccinct: "Succinct:",
     pillDebug: "Level:",
     pillAi: "AI:",
@@ -59,13 +72,21 @@ const strings: Record<string, WebUiStrings> = {
     errorNetwork:
       "Couldn't reach iNoU right now — check your connection or wait a moment, then retry.",
     retryBtn: "↩ Retry",
-    modeNames: { promptMe: "Direct Mode", letMeServeYou: "Service Mode" },
+    clarificationQuestion: "What kind of response are you looking for?",
+    clarificationWriteIn: "Describe your preference...",
+    clarificationSubmit: "Confirm",
+    styleOptionLabels: {
+      canonical: "Canonical",
+      succinct: "Succinct",
+      detailed: "Detailed",
+      factual: "Fact-checking",
+      conversational: "Conversational",
+    },
   },
   de: {
     tabMain: "💬 Hauptstream",
     tabThinking: "🧠 Denkend",
     tabDebug: "⚙ Protokoll",
-    pillMode: "Modus:",
     pillSuccinct: "Kompakt:",
     pillDebug: "Stufe:",
     pillAi: "KI:",
@@ -80,13 +101,21 @@ const strings: Record<string, WebUiStrings> = {
     errorNetwork:
       "iNoU ist gerade nicht erreichbar — überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
     retryBtn: "↩ Wiederholen",
-    modeNames: { promptMe: "Direktmodus", letMeServeYou: "Servicemodus" },
+    clarificationQuestion: "Welche Art von Antwort suchen Sie?",
+    clarificationWriteIn: "Beschreiben Sie Ihre Präferenz...",
+    clarificationSubmit: "Bestätigen",
+    styleOptionLabels: {
+      canonical: "Kanonisch",
+      succinct: "Knapp",
+      detailed: "Detailliert",
+      factual: "Faktenprüfung",
+      conversational: "Konversationell",
+    },
   },
   fr: {
     tabMain: "💬 Flux Principal",
     tabThinking: "🧠 Réflexion",
     tabDebug: "⚙ Débogage",
-    pillMode: "Mode :",
     pillSuccinct: "Succinct :",
     pillDebug: "Niveau :",
     pillAi: "IA :",
@@ -101,13 +130,21 @@ const strings: Record<string, WebUiStrings> = {
     errorNetwork:
       "Impossible de joindre iNoU pour le moment — vérifiez votre connexion et réessayez.",
     retryBtn: "↩ Réessayer",
-    modeNames: { promptMe: "Mode Direct", letMeServeYou: "Mode Service" },
+    clarificationQuestion: "Quel type de réponse recherchez-vous ?",
+    clarificationWriteIn: "Décrivez votre préférence...",
+    clarificationSubmit: "Confirmer",
+    styleOptionLabels: {
+      canonical: "Canonique",
+      succinct: "Succinct",
+      detailed: "Détaillé",
+      factual: "Vérification des faits",
+      conversational: "Conversationnel",
+    },
   },
   pt: {
     tabMain: "💬 Fluxo Principal",
     tabThinking: "🧠 Pensando",
     tabDebug: "⚙ Depuração",
-    pillMode: "Modo:",
     pillSuccinct: "Sucinto:",
     pillDebug: "Nível:",
     pillAi: "IA:",
@@ -122,7 +159,16 @@ const strings: Record<string, WebUiStrings> = {
     errorNetwork:
       "Não foi possível conectar ao iNoU agora — verifique sua conexão e tente novamente.",
     retryBtn: "↩ Tentar novamente",
-    modeNames: { promptMe: "Modo Direto", letMeServeYou: "Modo Serviço" },
+    clarificationQuestion: "Que tipo de resposta você está procurando?",
+    clarificationWriteIn: "Descreva sua preferência...",
+    clarificationSubmit: "Confirmar",
+    styleOptionLabels: {
+      canonical: "Canônico",
+      succinct: "Breve",
+      detailed: "Detalhado",
+      factual: "Verificação de fatos",
+      conversational: "Conversacional",
+    },
   },
 };
 

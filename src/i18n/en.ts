@@ -5,6 +5,7 @@ export const enDictionary: I18nDictionary = {
   shellBanner: {
     title: 'INUO Interactive Shell',
     protocolSync: 'Protocol Sync Status: Synced',
+    greeting: 'INUO active. Enter your command or goal.',
   },
   farewell: 'Exiting INUO shell. Goodbye!',
   systemOverview: {
@@ -15,14 +16,7 @@ export const enDictionary: I18nDictionary = {
     decentralizedGovernance: 'Decentralized Governance & Trust: Enforces millisecond circuit breakers and multi-party threshold consensus.',
   },
   hostGreeting: {
-    promptMe: {
-      greetingText: 'INUO (Direct Mode / promptMe) active. Enter your command or goal.',
-      promptWhoAreYouText: 'Active Identity:',
-    },
-    letMeServeYou: {
-      greetingText: 'Good day{name}! Welcome to INUO. It is an honor to serve you today.',
-      promptWhoAreYouText: 'May I ask who is speaking today so I may tailor my service to you?',
-    },
+    greeting: 'Welcome to INUO. How can I help you today?',
   },
   intentParser: {
     analyzing: '[Gemini AI Intent Parser] Analyzing natural language intent...',
@@ -34,11 +28,23 @@ export const enDictionary: I18nDictionary = {
     parsedAnswer: '✔ AI Parsed Knowledge Answer:',
     parsedCorrection: '✔ AI Parsed User Correction:',
   },
+  style: {
+    styleDetected: '✔ I noticed you prefer {style} responses. I will keep that up.',
+    styleLearned: '✔ Got it. I will remember your preference.',
+    clarificationQuestion: 'What kind of response are you looking for?',
+    clarificationWriteIn: 'Describe your preference...',
+    optionLabels: {
+      canonical: 'Canonical',
+      succinct: 'Succinct',
+      detailed: 'Detailed',
+      factual: 'Fact-checking',
+      conversational: 'Conversational',
+    },
+  },
   mode: {
     succinctEnabled: '✔ [Succinct Mode] ENABLED (Concise responses, bullet lists only, no tables).',
     succinctDisabled: '✔ [Succinct Mode] DISABLED (Standard verbose responses).',
     debugLevelSet: '✔ [Debug Level Set] System debug verbosity set to Level',
-    operatingModeChanged: '✔ [INUO Operating Mode Changed] Switched to mode:',
     languageSet: '✔ [Language Determination] Set interaction language to:',
   },
   errors: {

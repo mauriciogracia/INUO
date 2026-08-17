@@ -5,6 +5,7 @@ export const ptDictionary: I18nDictionary = {
   shellBanner: {
     title: 'Shell Interativo do INUO',
     protocolSync: 'Status de Sincronização do Protocolo: Sincronizado',
+    greeting: 'INUO ativo. Insira seu comando ou objetivo.',
   },
   farewell: 'Saindo do shell do INUO. Até logo!',
   systemOverview: {
@@ -15,18 +16,11 @@ export const ptDictionary: I18nDictionary = {
     decentralizedGovernance: 'Governança e Confiança Descentralizada: Aplica disjuntores em milissegundos e consenso multipartidário.',
   },
   hostGreeting: {
-    promptMe: {
-      greetingText: 'INUO (Modo Direto / promptMe) ativo. Insira seu comando.',
-      promptWhoAreYouText: 'Identidade ativa:',
-    },
-    letMeServeYou: {
-      greetingText: 'Bom dia{name}! Bem-vindo ao INUO. É uma honra servi-lo hoje.',
-      promptWhoAreYouText: 'Posso saber quem está conosco hoje para oferecer um atendimento personalizado?',
-    },
+    greeting: 'Bem-vindo ao INUO. Como posso ajudá-lo hoje?',
   },
   intentParser: {
     analyzing: '[Analisador de Intenção AI Gemini] Analisando intenção em linguagem natural...',
-    commandSequence: '[Traducteur de Comandos LLM]: Prompt convertido em comando(s) CLI:',
+    commandSequence: '[Tradutor de Comandos LLM]: Prompt convertido em comando(s) CLI:',
     executingCommand: '⚡ Executando:',
     parsedNeed: '✔ Intenção de Necessidade Processada:',
     parsedOffer: '✔ Intenção de Oferta Processada:',
@@ -34,11 +28,23 @@ export const ptDictionary: I18nDictionary = {
     parsedAnswer: '✔ Resposta de Conhecimento Processada:',
     parsedCorrection: '✔ Correção do Usuário Processada:',
   },
+  style: {
+    styleDetected: '✔ Notei que você prefere respostas {style}. Continuarei assim.',
+    styleLearned: '✔ Entendido. Vou lembrar da sua preferência.',
+    clarificationQuestion: 'Que tipo de resposta você está procurando?',
+    clarificationWriteIn: 'Descreva sua preferência...',
+    optionLabels: {
+      canonical: 'Canônico',
+      succinct: 'Breve',
+      detailed: 'Detalhado',
+      factual: 'Verificação de fatos',
+      conversational: 'Conversacional',
+    },
+  },
   mode: {
     succinctEnabled: '✔ [Modo Sucinto] ATIVADO (Respostas concisas, apenas tópicos, sem tabelas).',
     succinctDisabled: '✔ [Modo Sucinto] DESATIVADO (Respostas detalhadas padrão).',
-    debugLevelSet: '✔ [Nível de Depuração] Nível de verbosidad do sistema definido para',
-    operatingModeChanged: '✔ [Modo Operacional INUO Alterado] Alternado para o modo:',
+    debugLevelSet: '✔ [Nível de Depuração] Nível de verbosidade do sistema definido para',
     languageSet: '✔ [Determinação de Idioma] Idioma de interação definido para:',
   },
   errors: {

@@ -5,6 +5,7 @@ export const esDictionary: I18nDictionary = {
   shellBanner: {
     title: 'Shell Interactivo de INUO',
     protocolSync: 'Estado de Sincronización del Protocolo: Sincronizado',
+    greeting: 'INUO activo. Ingrese su comando o consulta.',
   },
   farewell: 'Saliendo del shell de INUO. ¡Hasta luego!',
   systemOverview: {
@@ -15,14 +16,7 @@ export const esDictionary: I18nDictionary = {
     decentralizedGovernance: 'Gobernanza y Confianza Descentralizada: Aplica cortafuegos en milisegundos y consenso multipartidario.',
   },
   hostGreeting: {
-    promptMe: {
-      greetingText: 'INUO (Modo Directo / promptMe) activo. Ingrese su comando o consulta.',
-      promptWhoAreYouText: 'Identidad activa:',
-    },
-    letMeServeYou: {
-      greetingText: '¡Buenos días{name}! Bienvenido a INUO. Es un honor atenderle hoy.',
-      promptWhoAreYouText: '¿Me permite saber quién nos acompaña hoy para brindarle una atención personalizada?',
-    },
+    greeting: 'Bienvenido a INUO. ¿En qué puedo ayudarle hoy?',
   },
   intentParser: {
     analyzing: '[Analizador de Intención AI Gemini] Analizando intención de lenguaje natural...',
@@ -34,11 +28,23 @@ export const esDictionary: I18nDictionary = {
     parsedAnswer: '✔ Respuesta de Conocimiento Procesada:',
     parsedCorrection: '✔ Corrección de Usuario Procesada:',
   },
+  style: {
+    styleDetected: '✔ Noté que prefiere respuestas {style}. Continuaré con ese estilo.',
+    styleLearned: '✔ Entendido. Recordaré su preferencia.',
+    clarificationQuestion: '¿Qué tipo de respuesta está buscando?',
+    clarificationWriteIn: 'Describa su preferencia...',
+    optionLabels: {
+      canonical: 'Canónico',
+      succinct: 'Breve',
+      detailed: 'Detallado',
+      factual: 'Revisión de hechos',
+      conversational: 'Conversacional',
+    },
+  },
   mode: {
     succinctEnabled: '✔ [Modo Sucinto] ACTIVADO (Respuestas concisas, solo viñetas, sin tablas).',
     succinctDisabled: '✔ [Modo Sucinto] DESACTIVADO (Respuestas estándar detalladas).',
     debugLevelSet: '✔ [Nivel de Depuración] Nivel de verbosidad del sistema configurado a:',
-    operatingModeChanged: '✔ [Modo Operativo INUO Cambiado] Cambiado al modo:',
     languageSet: '✔ [Determinación de Idioma] Idioma de interacción establecido en:',
   },
   errors: {

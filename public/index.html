@@ -25,14 +25,6 @@
         </div>
 
         <div class="status-pills">
-          <div class="pill mode-pill">
-            <span class="pill-label" id="label-mode">Modo:</span>
-            <select id="mode-select" class="mode-dropdown">
-              <option value="promptMe" selected>Modo Directo</option>
-              <option value="letMeServeYou">Modo Servicio</option>
-            </select>
-          </div>
-
           <div class="pill succinct-pill">
             <span class="pill-label" id="label-succinct">Conciso:</span>
             <span class="pill-value badge-on" id="status-succinct">ON</span>
@@ -74,6 +66,23 @@
           >
         </div>
       </main>
+
+      <!-- Intent Clarification Widget (hidden by default, rendered inline by app.ts) -->
+      <template id="clarification-widget-template">
+        <div class="log-entry clarification-widget" id="clarification-widget" role="region" aria-label="Clarification">
+          <p class="clarification-question" id="clarification-question-text"></p>
+          <div class="clarification-options" id="clarification-options" role="radiogroup"></div>
+          <div class="clarification-writein">
+            <input
+              type="text"
+              id="clarification-writein-input"
+              class="clarification-input"
+              autocomplete="off"
+            />
+            <button type="button" class="clarification-submit-btn" id="clarification-submit-btn"></button>
+          </div>
+        </div>
+      </template>
 
       <!-- Pinned Bottom Input Bar -->
       <footer class="bottom-input-bar">

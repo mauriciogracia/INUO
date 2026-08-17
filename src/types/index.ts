@@ -20,7 +20,7 @@ export * from "./DeviceType";
 export * from "./EmergencyStatus";
 export * from "./RelationshipType";
 export * from "./AuthMethod";
-export * from "./OperatingMode";
+export * from "./InteractionStyle";
 export * from "./QuestionOptionType";
 export * from "./ResponseLength";
 export * from "./ResponseFormat";

@@ -1,81 +1,55 @@
-# INOU System Specification Implementation Status (`current-status.md`)
+# INUO Implementation Status (`current-status.md`)
 
 | Property | Value |
 | :--- | :--- |
-| **Audit Date** | 2026-08-15 |
-| **Master Specification** | [`tech-specs/main-specs-goals.md`](file:///d:/repos/INUO/tech-specs/main-specs-goals.md) |
-| **Architectural Rules** | [`tech-specs/dev-rules.md`](file:///d:/repos/INUO/tech-specs/dev-rules.md) |
-| **Overall Implementation Progress** | **~72% Complete** |
+| **Updated** | 2026-08-16 |
+| **Master Spec** | [`docs/tech-specs/main-specs-goals.md`](file:///d:/repos/INUO/docs/tech-specs/main-specs-goals.md) |
+| **Dev Rules** | [`docs/tech-specs/dev-rules.md`](file:///d:/repos/INUO/docs/tech-specs/dev-rules.md) |
+| **Overall Progress** | ~72% of total specification |
+
+> **Source of truth for all work items:**
+> - ✅ Completed → [`docs/improved/`](file:///d:/repos/INUO/docs/improved/)
+> - 🔧 Pending → [`to-improve/`](file:///d:/repos/INUO/to-improve/)
 
 ---
 
-## 1. Executive Summary
+## Progress by Phase
 
-INOU is a deterministic, integration-first workflow orchestrator and task DAG execution runtime. Current platform maturity stands at **~72% of the total system specification**, with Phase 1 (Minimum Viable Orchestrator) nearing completion at **~90%**.
-
-```text
-[██████████████████░░] Phase 1: Minimum Viable Orchestrator (MVO)    ~90%
-[████████████░░░░░░░░] Phase 2: Telemetry Event Bus & Document Pipe   ~60%
-[████████░░░░░░░░░░░░] Phase 3: Progressive Clarification & Rules    ~40%
-[██████░░░░░░░░░░░░░░] Phase 4: Integrations & Cloud Sync (Colmena)   ~30%
--------------------------------------------------------------------------
-[██████████████░░░░░░] TOTAL SPECIFICATION COMPLETION               ~72%
+```
+[██████████████████░░] Phase 1: Minimum Viable Orchestrator     ~90%
+[████████████░░░░░░░░] Phase 2: Telemetry, Event Bus & Docs     ~60%
+[████████░░░░░░░░░░░░] Phase 3: Clarification & Jurisdiction    ~40%
+[██████░░░░░░░░░░░░░░] Phase 4: Integrations & Cloud Sync       ~30%
+──────────────────────────────────────────────────────────────────
+[██████████████░░░░░░] TOTAL                                    ~72%
 ```
 
 ---
 
-## 2. Detailed Breakdown by Architectural Domain
+## Completed Work — [`docs/improved/`](file:///d:/repos/INUO/docs/improved/)
 
-| Section / Architectural Goal | Completion | Status & Implementation Details |
-| :--- | :---: | :--- |
-| **§1 & §3 Structural Hierarchy & AST Engine**<br>*(Projects $\rightarrow$ Workflows $\rightarrow$ Nodes / DAG AST)* | **90%** | **Implemented**: Complete recursive composite AST models, domain interfaces ([`src/interfaces/`](file:///d:/repos/INUO/src/interfaces)), and Project $\rightarrow$ Workflow $\rightarrow$ Node containment hierarchy. |
-| **§2 Clean Architecture & SOLID Directives**<br>*(Hexagonal architecture, Single-Definition rule)* | **95%** | **Implemented**: Strict single-definition files across `src/interfaces/`, `src/types/`, `src/enums/`. Centralized in [`tech-specs/dev-rules.md`](file:///d:/repos/INUO/tech-specs/dev-rules.md). |
-| **§4 Execution Runtime & Adaptive Learning**<br>*(Plan engine, tri-mode isolation, Cognitive memory)* | **65%** | **In Progress**: Plan generation, skill synthesis, and adaptive memory levels 0–4 active ([`src/cli/learnEngine.ts`](file:///d:/repos/INUO/src/cli/learnEngine.ts)). Full distributed telemetry Event Bus is in Phase 2. |
-| **§5 UI Architecture & Planning Views**<br>*(3-level sliding window, Kanban, Web UI)* | **60%** | **In Progress**: ASCII TUI and responsive Web UI runtime active ([`src/cli/asciiWebClient.ts`](file:///d:/repos/INUO/src/cli/asciiWebClient.ts)). Visual DAG canvas is in roadmap. |
-| **§6 Relational Storage & Cloud Sync**<br>*(SQLite DDL, `cloud_sync_journal`, Red Colmena)* | **55%** | **In Progress**: State persistence and SQLite schema DDL complete. Background delta replication daemon is in Phase 4. |
-| **§7 CLI Shell & Command Reference**<br>*(Workflow/Node CRUD, `socialmedia`, `alias`, etc.)* | **80%** | **Implemented**: `init`, `workflow`, `node`, `plan`, `socialmedia`, `alias`, `learn`, `evolve`, `setup`, `status`. Pandoc/Typst export and Jira importer pending. |
-| **§10 Canonical INUO Specification Engine**<br>*(Formulas, Trust Levels, Free-Tier Governance)* | **95%** | **Implemented**: Canonical $\text{NEED} = (\text{VERB}) + (\text{OBJECT})$, Trust Engine, instant millisecond disconnect, and zero-cost quota prioritization. |
+| ID | Title | Completed |
+| :--- | :--- | :--- |
+| [0001](file:///d:/repos/INUO/docs/improved/0001-llm-configuration-cli-ui-rest.md) | LLM Configuration Management (CLI, UI, REST) | 2026-08-14 |
+| [0002](file:///d:/repos/INUO/docs/improved/0002-workflow-node-crud-commands.md) | Workflow Node CRUD Commands | 2026-08-14 |
+| [0003](file:///d:/repos/INUO/docs/improved/0003-spec-and-test-updates-for-workflow-node-crud.md) | Spec & Test Updates for Workflow Node CRUD | 2026-08-14 |
+| [0004](file:///d:/repos/INUO/docs/improved/0004-social-network-crud-and-broadcast-config.md) | Social Network CRUD & Broadcast Configuration | 2026-08-14 |
 
 ---
 
-## 3. Implemented Capabilities Matrix
+## Open Work — [`to-improve/`](file:///d:/repos/INUO/to-improve/)
 
-### 3.1 CLI Shell & Interaction Engine
-- **Interactive Shell & TUI**: Dynamic multi-command REPL with command history, colorized status banners, and multi-language support (EN, ES, FR, PT, DE).
-- **Workflow & Node Engine**: Complete CRUD commands (`workflow create/list/show/delete`, `node add/list/update/delete`) supporting DAG node attachments.
-- **Social Media Broadcast & User Aliases**: Command aliases (`alias add/list/remove`) with persistent state mapping and `socialmedia` broadcast configuration.
-- **Adaptive Learning Engine**: Skill synthesis and AI-driven capability bootstrapping adhering to strict type generation rules.
-
-### 3.2 Security, Governance & Cost Protection
-- **Dynamic Trust Governance**: Real-time evaluation of trust thresholds with sub-millisecond safety disconnection.
-- **Free-Tier Token Conservation**: Strict prioritization of free/zero-cost LLMs with fail-safe blocks against unconsented billable execution.
-- **Immutable Audit Trail**: Structured event journaling for state transitions and operations.
-
----
-
-## 4. Phasing Roadmap & Remaining Milestones to 100%
-
-### Phase 1: Minimum Viable Orchestrator (MVO) — **~90% Complete**
-- [x] Canonical Need/Offer interaction matching engine.
-- [x] Project $\rightarrow$ Workflow $\rightarrow$ Node recursive AST schemas.
-- [x] Interactive CLI shell & TUI execution environment.
-- [x] Free-tier token and cost governance safeguards.
-- [ ] Direct SQLite DAO integration replacing flat-file JSON state.
-
-### Phase 2: Telemetry Event Bus, Document Pipeline & Kanban — **~60% Complete**
-- [x] ASCII TUI and web server execution layer.
-- [x] Basic dry-run simulation pipeline.
-- [ ] Full pub/sub Distributed Telemetry Event Bus via WebSockets.
-- [ ] Chained CLI compilation pipeline (`pandoc`, `typst`, `weasyprint`) for DOCX, PDF, XLSX generation.
-
-### Phase 3: Progressive Clarification & Jurisdiction Engine — **~40% Complete**
-- [x] Adaptive memory models and cognitive state levels 0–4.
-- [ ] Immutable question registry (`[Q-001]`) with non-nagging elicitation gating.
-- [ ] Cascading cultural and jurisdictional rule injection (Project $\rightarrow$ Workflow $\rightarrow$ Epic $\rightarrow$ Task).
-
-### Phase 4: Integrations, Multi-Device Cloud Sync & MCP Server — **~30% Complete**
-- [x] Ecosystem adapter interface abstractions.
-- [x] SQLite `cloud_sync_journal` DDL schema.
-- [ ] Background P2P / Cloud sync daemon (Red Colmena).
-- [ ] Native Model Context Protocol (MCP) STDIO & SSE Server.
-- [ ] Third-party tracker bidirectional sync (Jira, Trello).
+| ID | Title | Priority |
+| :--- | :--- | :--- |
+| [0001](file:///d:/repos/INUO/to-improve/0001-integration-and-provider-runtime-gap.md) | Copilot Runtime Integration Gap | 🟡 P2 |
+| [0002](file:///d:/repos/INUO/to-improve/0002-broken-spec-links-after-mv.md) | Fix Broken Internal Spec Links After `mv` | 🔴 P0 |
+| [0003](file:///d:/repos/INUO/to-improve/0003-unify-canonical-sqlite-ddl.md) | Unified Canonical SQLite DDL — Resolve Schema Conflicts | 🔴 P0 |
+| [0004](file:///d:/repos/INUO/to-improve/0004-missing-repositories-workflow-node-memory.md) | Missing Repositories: Workflow, Node, Memory | 🔴 P1 |
+| [0005](file:///d:/repos/INUO/to-improve/0005-dag-execution-engine.md) | DAG Execution Engine — RunOrchestrator, CPM, AppModeManager | 🔴 P1 |
+| [0006](file:///d:/repos/INUO/to-improve/0006-clarification-engine.md) | Progressive Clarification Engine (Q-IDs, Elicitation Gating) | 🟡 P2 |
+| [0007](file:///d:/repos/INUO/to-improve/0007-adaptive-format-preference-learning.md) | Adaptive User Format Preference Learning | 🟡 P2 |
+| [0008](file:///d:/repos/INUO/to-improve/0008-ai-usage-tracking.md) | AI Usage Tracking — Token Counts & Budget Limits | 🟡 P2 |
+| [0009](file:///d:/repos/INUO/to-improve/0009-multi-ai-provider-configuration.md) | Multi-AI Provider Configuration (OpenAI, Anthropic, Ollama) | 🟡 P2 |
+| [0010](file:///d:/repos/INUO/to-improve/0010-mcp-server.md) | MCP Server — Tool Catalogue, STDIO/SSE Transport | 🟡 P3 |
+| [0011](file:///d:/repos/INUO/to-improve/0011-document-compilation-pipeline.md) | Document Compilation Pipeline (DOCX, PDF, XLSX) | 🟡 P3 |
+| [0012](file:///d:/repos/INUO/to-improve/0012-resolve-scenario-03-duplication.md) | Resolve `escenario_03.md` vs `scenario_03.md` Duplication | 🟢 P4 |
