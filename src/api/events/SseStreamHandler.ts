@@ -39,11 +39,17 @@ export class SseStreamHandler {
   }
 
   private static sendEvent(res: ServerResponse, envelope: InuoEventEnvelope): void {
-    res.write(`id: ${envelope.eventId}\n`);
-    res.write(`event: ${envelope.eventType}\n`);
-    const payload = envelope.payload && typeof envelope.payload === "object" && (envelope.payload as any).channel
-      ? envelope.payload
-      : envelope;
-    res.write(`data: ${JSON.stringify(payload)}\n\n`);
+    // Guard: client may have disconnected between EventBus emit and this write
+    if (res.writableEnded || res.destroyed) return;
+    try {
+      res.write(`id: ${envelope.eventId}\n`);
+      res.write(`event: ${envelope.eventType}\n`);
+      const payload = envelope.payload && typeof envelope.payload === "object" && (envelope.payload as any).channel
+        ? envelope.payload
+        : envelope;
+      res.write(`data: ${JSON.stringify(payload)}\n\n`);
+    } catch {
+      // Swallow write-after-end / broken pipe errors from stale connections
+    }
   }
 }

@@ -25,9 +25,14 @@ export function getRegisteredAliases(
   return aliases;
 }
 
+/** Maximum number of alias expansions before aborting to prevent infinite loops. */
+const MAX_ALIAS_DEPTH = 3;
+
 export function resolveAlias(
   line: string,
   rootDir: string = process.cwd(),
+  _visited: Set<string> = new Set(),
+  _depth: number = 0,
 ): string {
   const trimmed = line.trim();
   if (!trimmed) return trimmed;
@@ -36,13 +41,29 @@ export function resolveAlias(
   const firstToken = parts[0].toLowerCase();
   const aliases = getRegisteredAliases(rootDir);
 
-  if (aliases[firstToken]) {
-    const target = aliases[firstToken];
-    const rest = parts.slice(1).join(" ");
-    return rest ? `${target} ${rest}` : target;
+  if (!aliases[firstToken]) return trimmed;
+
+  // Cycle detection
+  if (_visited.has(firstToken)) {
+    throw new Error(
+      `Circular alias detected: "${firstToken}" is part of a recursive alias chain (${[..._visited, firstToken].join(" → ")})`,
+    );
   }
 
-  return trimmed;
+  // Depth cap
+  if (_depth >= MAX_ALIAS_DEPTH) {
+    throw new Error(
+      `Alias expansion depth limit (${MAX_ALIAS_DEPTH}) exceeded starting from "${firstToken}"`,
+    );
+  }
+
+  const target = aliases[firstToken];
+  const rest = parts.slice(1).join(" ");
+  const expanded = rest ? `${target} ${rest}` : target;
+
+  // Recursively resolve in case the target is itself an alias
+  _visited.add(firstToken);
+  return resolveAlias(expanded, rootDir, _visited, _depth + 1);
 }
 
 export function runAliasCommand(
@@ -77,9 +98,7 @@ export function runAliasCommand(
       aliasName,
       targetCommand,
       createdAt:
-        existingIndex >= 0
-          ? state.aliases[existingIndex].createdAt
-          : now,
+        existingIndex >= 0 ? state.aliases[existingIndex].createdAt : now,
       updatedAt: now,
     };
 
@@ -95,7 +114,11 @@ export function runAliasCommand(
     return;
   }
 
-  if (subcommand === "remove" || subcommand === "rm" || subcommand === "delete") {
+  if (
+    subcommand === "remove" ||
+    subcommand === "rm" ||
+    subcommand === "delete"
+  ) {
     const aliasName = args[1]?.trim().toLowerCase();
     if (!aliasName) {
       console.log("Usage: alias remove <aliasName>");

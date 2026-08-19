@@ -29,7 +29,14 @@ export function writeOutput(
   if (!content) return;
 
   if (activeOutputListener) {
-    activeOutputListener(channel, content);
+    try {
+      activeOutputListener(channel, content);
+    } catch (err) {
+      // Guard: listener failure must never crash the caller — fall back to stderr
+      process.stderr.write(
+        `\x1b[31m[outputRouter] Listener error on channel ${channel}: ${err}\x1b[0m\n`
+      );
+    }
     return;
   }
 
